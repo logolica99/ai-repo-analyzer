@@ -6,9 +6,12 @@ A powerful CLI tool that analyzes GitHub repositories and generates comprehensiv
 
 - 🔍 **Repository Analysis**: Deep analysis of GitHub repositories including code structure, dependencies, and patterns
 - 📝 **User Story Generation**: AI-powered generation of user stories based on repository analysis
+- 🏗️ **System Architecture Analysis**: Generate comprehensive Mermaid diagrams for system architecture, API flows, and data flows
+- 🌐 **API Endpoint Mapping**: Automatically identify and document API endpoints, external integrations, and service communications
+- 🔧 **Technical Deep Dive**: Analyze technology stack, build systems, testing frameworks, and deployment strategies
 - 🌐 **Internet Access**: Can research and gather additional context from the web
 - 🎯 **Smart Context**: Understands project purpose, tech stack, and user needs
-- 📊 **Rich Output**: Beautiful terminal output with formatted user stories
+- 📊 **Rich Output**: Beautiful terminal output with formatted user stories and interactive architecture diagrams
 - ⚡ **Fast Processing**: Efficient analysis using Claude Code SDK
 
 ## Prerequisites
@@ -39,8 +42,14 @@ pip install github-repo-analyzer
 ### Basic Usage
 
 ```bash
-# Analyze a public repository
+# Basic analysis - user stories only
 github-repo-analyzer analyze --repo "owner/repo-name"
+
+# Comprehensive analysis with architecture diagrams and API mapping
+github-repo-analyzer analyze --repo "owner/repo-name" --comprehensive
+
+# Architecture-focused analysis (no user stories, just technical analysis)
+github-repo-analyzer architecture --repo "owner/repo-name"
 
 # Analyze with custom output format
 github-repo-analyzer analyze --repo "owner/repo-name" --format json
@@ -52,28 +61,51 @@ github-repo-analyzer analyze --repo "owner/repo-name" --token "your-github-token
 ### Advanced Options
 
 ```bash
-# Generate user stories with specific focus
+# Generate comprehensive analysis with specific focus
 github-repo-analyzer analyze \
   --repo "owner/repo-name" \
-  --focus "user-experience" \
-  --max-stories 10 \
-  --output-file "user-stories.md"
+  --comprehensive \
+  --focus "scalability" \
+  --max-stories 8 \
+  --output-file "comprehensive-analysis.md"
 
-# Analyze with custom system prompt
+# Architecture analysis with focus on specific area
+github-repo-analyzer architecture \
+  --repo "owner/repo-name" \
+  --focus "microservices" \
+  --output-file "architecture-report.md"
+
+# Full comprehensive analysis with all features
 github-repo-analyzer analyze \
   --repo "owner/repo-name" \
-  --system-prompt "Focus on mobile app user stories"
+  --comprehensive \
+  --include-architecture \
+  --include-api-analysis \
+  --format markdown \
+  --output-file "full-analysis.md"
 ```
 
 ### Command Options
 
+#### `analyze` Command
 - `--repo`: GitHub repository in format "owner/repo-name" (required)
 - `--token`: GitHub personal access token for private repositories
-- `--focus`: Specific focus area for user stories (e.g., "security", "performance", "accessibility")
+- `--comprehensive`: Enable comprehensive analysis with architecture diagrams and technical deep dive
+- `--include-architecture`: Include system architecture diagrams (default: true with --comprehensive)
+- `--include-api-analysis`: Include API endpoint analysis (default: true with --comprehensive)
+- `--focus`: Specific focus area (e.g., "security", "performance", "microservices")
 - `--max-stories`: Maximum number of user stories to generate (default: 5)
 - `--format`: Output format: text, json, markdown (default: text)
 - `--output-file`: Save output to file instead of printing to terminal
 - `--system-prompt`: Custom system prompt for Claude
+
+#### `architecture` Command
+- `--repo`: GitHub repository in format "owner/repo-name" (required)
+- `--token`: GitHub personal access token for private repositories
+- `--focus`: Focus area for architecture analysis
+- `--output-file`: Save architecture diagrams to file (default: auto-generated)
+
+#### General Options
 - `--verbose`: Enable verbose logging
 
 ## Examples
@@ -97,16 +129,27 @@ github-repo-analyzer analyze \
 
 This will analyze VS Code with a focus on developer productivity features.
 
-### Example 3: Save to File
+### Example 3: Comprehensive Analysis
 
 ```bash
 github-repo-analyzer analyze \
-  --repo "django/django" \
+  --repo "excalidraw/excalidraw" \
+  --comprehensive \
   --format markdown \
-  --output-file "django-user-stories.md"
+  --output-file "excalidraw-full-analysis.md"
 ```
 
-This will save the analysis results to a markdown file.
+This generates a comprehensive analysis with system architecture diagrams, API mappings, and user stories.
+
+### Example 4: Architecture-Only Analysis
+
+```bash
+github-repo-analyzer architecture \
+  --repo "facebook/react" \
+  --focus "component-architecture"
+```
+
+This focuses purely on system architecture and technical analysis without user stories.
 
 ## Output Formats
 

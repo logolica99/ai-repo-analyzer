@@ -121,6 +121,40 @@ class OutputFormatter:
             "user_stories": []
         }
         
+        # Add comprehensive analysis data if available
+        if result.system_architecture:
+            output_data["system_architecture"] = {
+                "system_diagram": result.system_architecture.system_diagram,
+                "api_flow_diagram": result.system_architecture.api_flow_diagram,
+                "data_flow_diagram": result.system_architecture.data_flow_diagram,
+                "component_diagram": result.system_architecture.component_diagram,
+                "deployment_diagram": result.system_architecture.deployment_diagram
+            }
+        
+        if result.api_analysis:
+            output_data["api_analysis"] = {
+                "endpoints": result.api_analysis.endpoints,
+                "external_services": result.api_analysis.external_services,
+                "authentication_methods": result.api_analysis.authentication_methods,
+                "data_formats": result.api_analysis.data_formats,
+                "websocket_events": result.api_analysis.websocket_events,
+                "database_schemas": result.api_analysis.database_schemas
+            }
+        
+        if result.technical_deep_dive:
+            output_data["technical_deep_dive"] = {
+                "technology_stack": result.technical_deep_dive.technology_stack,
+                "build_system": result.technical_deep_dive.build_system,
+                "testing_framework": result.technical_deep_dive.testing_framework,
+                "ci_cd_pipeline": result.technical_deep_dive.ci_cd_pipeline,
+                "deployment_strategy": result.technical_deep_dive.deployment_strategy,
+                "performance_optimizations": result.technical_deep_dive.performance_optimizations,
+                "security_features": result.technical_deep_dive.security_features
+            }
+        
+        if result.comprehensive_report:
+            output_data["comprehensive_report"] = result.comprehensive_report
+        
         for story in result.user_stories:
             story_data = {
                 "id": story.id,
@@ -142,20 +176,27 @@ class OutputFormatter:
         """Format the result as Markdown."""
         lines = []
         
+        # Check if this is a comprehensive analysis
+        is_comprehensive = bool(result.system_architecture or result.api_analysis or result.technical_deep_dive)
+        
         # Header
-        lines.append(f"# User Stories for {result.repository.full_name}")
+        if is_comprehensive:
+            lines.append(f"# Comprehensive Technical Analysis: {result.repository.full_name}")
+        else:
+            lines.append(f"# User Stories for {result.repository.full_name}")
         lines.append("")
         
         # Repository summary
-        lines.append("## Repository Summary")
+        lines.append("## Repository Overview")
         lines.append("")
         lines.append(f"**Repository:** {result.repository.full_name}  ")
         lines.append(f"**Description:** {result.repository.description or 'No description available'}  ")
         lines.append(f"**Language:** {result.repository.language or 'Not specified'}  ")
-        lines.append(f"**Stars:** {result.repository.stars}  ")
-        lines.append(f"**Forks:** {result.repository.forks}  ")
+        lines.append(f"**Stars:** {result.repository.stars:,}  ")
+        lines.append(f"**Forks:** {result.repository.forks:,}  ")
         lines.append(f"**Topics:** {', '.join(result.repository.topics) if result.repository.topics else 'None'}  ")
         lines.append(f"**License:** {result.repository.license or 'Not specified'}  ")
+        lines.append(f"**Size:** {result.repository.size:,} KB  ")
         lines.append(f"**Analysis Date:** {result.analysis_date.strftime('%Y-%m-%d %H:%M:%S')}  ")
         
         if result.focus_area:
@@ -163,29 +204,162 @@ class OutputFormatter:
         
         lines.append("")
         
-        # Technology stack
-        if result.tech_stack:
-            lines.append("## Technology Stack")
+        # System Architecture Section
+        if result.system_architecture:
+            lines.append("## 🏗️ System Architecture")
             lines.append("")
-            for tech in result.tech_stack:
-                lines.append(f"- {tech}")
+            lines.append("This section contains Mermaid diagrams that visualize the system architecture. ")
+            lines.append("Copy the diagram code to [Mermaid Live](https://mermaid.live) to view the interactive diagrams.")
+            lines.append("")
+            
+            if result.system_architecture.system_diagram:
+                lines.append("### Overall System Architecture")
+                lines.append("")
+                lines.append("```mermaid")
+                lines.append(result.system_architecture.system_diagram)
+                lines.append("```")
+                lines.append("")
+            
+            if result.system_architecture.api_flow_diagram:
+                lines.append("### API Flow Diagram")
+                lines.append("")
+                lines.append("```mermaid")
+                lines.append(result.system_architecture.api_flow_diagram)
+                lines.append("```")
+                lines.append("")
+            
+            if result.system_architecture.component_diagram:
+                lines.append("### Component Architecture")
+                lines.append("")
+                lines.append("```mermaid")
+                lines.append(result.system_architecture.component_diagram)
+                lines.append("```")
+                lines.append("")
+            
+            if result.system_architecture.data_flow_diagram:
+                lines.append("### Data Flow Architecture")
+                lines.append("")
+                lines.append("```mermaid")
+                lines.append(result.system_architecture.data_flow_diagram)
+                lines.append("```")
+                lines.append("")
+        
+        # API Analysis Section
+        if result.api_analysis:
+            lines.append("## 🌐 API & Integration Analysis")
+            lines.append("")
+            
+            if result.api_analysis.endpoints:
+                lines.append("### API Endpoints")
+                lines.append("")
+                for i, endpoint in enumerate(result.api_analysis.endpoints, 1):
+                    if isinstance(endpoint, dict):
+                        method = endpoint.get('method', 'GET')
+                        path = endpoint.get('path', endpoint.get('name', 'Unknown'))
+                        desc = endpoint.get('description', '')
+                        lines.append(f"{i}. **{method}** `{path}`")
+                        if desc:
+                            lines.append(f"   - {desc}")
+                    else:
+                        lines.append(f"{i}. {endpoint}")
+                lines.append("")
+            
+            if result.api_analysis.external_services:
+                lines.append("### External Services & Integrations")
+                lines.append("")
+                for service in result.api_analysis.external_services:
+                    lines.append(f"- {service}")
+                lines.append("")
+            
+            if result.api_analysis.authentication_methods:
+                lines.append("### Authentication Methods")
+                lines.append("")
+                for auth in result.api_analysis.authentication_methods:
+                    lines.append(f"- {auth}")
+                lines.append("")
+            
+            if result.api_analysis.websocket_events:
+                lines.append("### Real-time Events (WebSocket)")
+                lines.append("")
+                for event in result.api_analysis.websocket_events:
+                    lines.append(f"- {event}")
+                lines.append("")
+        
+        # Technical Deep Dive Section
+        if result.technical_deep_dive:
+            lines.append("## 🔧 Technical Deep Dive")
+            lines.append("")
+            
+            # Technology Stack
+            tech_stack = result.technical_deep_dive.technology_stack
+            if tech_stack:
+                lines.append("### Technology Stack")
+                lines.append("")
+                for category, technologies in tech_stack.items():
+                    if technologies:
+                        lines.append(f"**{category.replace('_', ' ').title()}:**")
+                        for tech in technologies:
+                            lines.append(f"- {tech}")
+                        lines.append("")
+            
+            # Build System
+            if result.technical_deep_dive.build_system:
+                lines.append("### Build System")
+                lines.append("")
+                build_info = result.technical_deep_dive.build_system
+                for key, value in build_info.items():
+                    if value:
+                        lines.append(f"- **{key.replace('_', ' ').title()}:** {value}")
+                lines.append("")
+            
+            # Performance Optimizations
+            if result.technical_deep_dive.performance_optimizations:
+                lines.append("### Performance Optimizations")
+                lines.append("")
+                for opt in result.technical_deep_dive.performance_optimizations:
+                    lines.append(f"- {opt}")
+                lines.append("")
+            
+            # Security Features
+            if result.technical_deep_dive.security_features:
+                lines.append("### Security Features")
+                lines.append("")
+                for security in result.technical_deep_dive.security_features:
+                    lines.append(f"- {security}")
+                lines.append("")
+        
+        # Comprehensive Technical Report
+        if result.comprehensive_report:
+            lines.append("## 📋 Technical Report")
+            lines.append("")
+            lines.append(result.comprehensive_report)
             lines.append("")
         
-        # Key features
-        if result.key_features:
-            lines.append("## Key Features Identified")
-            lines.append("")
-            for feature in result.key_features[:5]:  # Limit to top 5
-                lines.append(f"- {feature}")
-            lines.append("")
-        
-        # Target users
-        if result.target_users:
-            lines.append("## Target Users")
-            lines.append("")
-            for user in result.target_users:
-                lines.append(f"- {user}")
-            lines.append("")
+        # Show basic analysis only if no comprehensive analysis is available
+        if not is_comprehensive:
+            # Technology stack
+            if result.tech_stack:
+                lines.append("## Technology Stack")
+                lines.append("")
+                for tech in result.tech_stack:
+                    lines.append(f"- {tech}")
+                lines.append("")
+            
+            # Key features
+            if result.key_features:
+                lines.append("## Key Features Identified")
+                lines.append("")
+                for feature in result.key_features[:5]:  # Limit to top 5
+                    lines.append(f"- {feature}")
+                lines.append("")
+            
+            # Target users
+            if result.target_users:
+                lines.append("## Target Users")
+                lines.append("")
+                for user in result.target_users:
+                    lines.append(f"- {user}")
+                lines.append("")
         
         # User stories
         lines.append("## User Stories")

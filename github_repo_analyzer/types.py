@@ -72,19 +72,6 @@ class RepositoryInfo:
 
 
 @dataclass
-class AnalysisResult:
-    """Result of repository analysis."""
-    repository: RepositoryInfo
-    user_stories: List[UserStory]
-    analysis_date: datetime
-    focus_area: Optional[str]
-    tech_stack: List[str]
-    key_features: List[str]
-    target_users: List[str]
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
 class GitHubConfig:
     """GitHub API configuration."""
     token: Optional[str] = None
@@ -124,6 +111,39 @@ class WebSearchResult:
 
 
 @dataclass
+class SystemArchitecture:
+    """System architecture analysis with Mermaid diagrams."""
+    system_diagram: str  # Mermaid diagram code
+    api_flow_diagram: str  # API flow Mermaid diagram
+    data_flow_diagram: str  # Data flow Mermaid diagram
+    component_diagram: str  # Component architecture diagram
+    deployment_diagram: Optional[str] = None  # Deployment architecture
+
+
+@dataclass
+class APIAnalysis:
+    """API endpoint and integration analysis."""
+    endpoints: List[Dict[str, Any]]
+    external_services: List[str]
+    authentication_methods: List[str]
+    data_formats: List[str]
+    websocket_events: List[str] = field(default_factory=list)
+    database_schemas: List[str] = field(default_factory=list)
+
+
+@dataclass
+class TechnicalDeepDive:
+    """Comprehensive technical analysis."""
+    technology_stack: Dict[str, List[str]]  # Categorized by frontend, backend, etc.
+    build_system: Dict[str, Any]
+    testing_framework: Dict[str, Any]
+    ci_cd_pipeline: Dict[str, Any]
+    deployment_strategy: Dict[str, Any]
+    performance_optimizations: List[str]
+    security_features: List[str]
+
+
+@dataclass
 class CodeAnalysis:
     """Analysis of repository code structure."""
     main_languages: List[str]
@@ -133,3 +153,28 @@ class CodeAnalysis:
     code_complexity: str
     test_coverage: Optional[str]
     documentation_quality: str
+    
+    # Enhanced analysis
+    system_architecture: Optional[SystemArchitecture] = None
+    api_analysis: Optional[APIAnalysis] = None
+    technical_deep_dive: Optional[TechnicalDeepDive] = None
+
+
+@dataclass
+class AnalysisResult:
+    """Result of repository analysis."""
+    repository: RepositoryInfo
+    user_stories: List[UserStory]
+    analysis_date: datetime
+    focus_area: Optional[str]
+    tech_stack: List[str]
+    key_features: List[str]
+    target_users: List[str]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    # Enhanced analysis results
+    code_analysis: Optional[CodeAnalysis] = None
+    system_architecture: Optional[SystemArchitecture] = None
+    api_analysis: Optional[APIAnalysis] = None
+    technical_deep_dive: Optional[TechnicalDeepDive] = None
+    comprehensive_report: Optional[str] = None  # Full technical report

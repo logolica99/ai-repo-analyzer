@@ -15,6 +15,7 @@ from rich.text import Text
 from rich.table import Table
 
 from .analyzer import GitHubRepoAnalyzer, AnalyzerFactory
+from .enhanced_analyzer import EnhancedClaudeAnalyzer
 from .types import OutputFormat, AnalyzerConfig
 from .exceptions import (
     GitHubRepoAnalyzerError, RepositoryNotFoundError, ClaudeAnalysisError,
@@ -60,8 +61,11 @@ def cli(ctx, verbose):
 @click.option('--output-file', '-o', type=click.Path(path_type=Path), help='Save output to file')
 @click.option('--system-prompt', help='Custom system prompt for Claude')
 @click.option('--config-file', type=click.Path(exists=True, path_type=Path), help='Configuration file path')
+@click.option('--comprehensive', '-c', is_flag=True, help='Enable comprehensive analysis with architecture diagrams')
+@click.option('--include-api-analysis', is_flag=True, default=True, help='Include API endpoint analysis')
+@click.option('--include-architecture', is_flag=True, default=True, help='Include system architecture diagrams')
 @click.pass_context
-def analyze(ctx, repo, token, focus, max_stories, output_format, output_file, system_prompt, config_file):
+def analyze(ctx, repo, token, focus, max_stories, output_format, output_file, system_prompt, config_file, comprehensive, include_api_analysis, include_architecture):
     """Analyze a GitHub repository and generate user stories."""
     
     try:
@@ -90,8 +94,17 @@ def analyze(ctx, repo, token, focus, max_stories, output_format, output_file, sy
         if ctx.obj.get('verbose'):
             config.verbose = True
         
-        # Run analysis
-        asyncio.run(_run_analysis(owner, repo_name, config))
+        # Store comprehensive analysis flags in config metadata
+        config.metadata = getattr(config, 'metadata', {})
+        config.metadata['comprehensive'] = comprehensive
+        config.metadata['include_api_analysis'] = include_api_analysis
+        config.metadata['include_architecture'] = include_architecture
+        
+        # Run analysis (comprehensive or basic)
+        if comprehensive:
+            asyncio.run(_run_comprehensive_analysis(owner, repo_name, config))
+        else:
+            asyncio.run(_run_analysis(owner, repo_name, config))
         
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -130,6 +143,49 @@ def quick(ctx, repo, token, focus, max_stories, output_format, output_file):
         
         # Run analysis
         asyncio.run(_run_analysis(owner, repo_name, config))
+        
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        if ctx.obj.get('verbose'):
+            console.print_exception()
+        sys.exit(1)
+
+
+@cli.command()
+@click.argument('repo', callback=validate_repo_format, required=True)
+@click.option('--token', '-t', help='GitHub personal access token')
+@click.option('--output-file', '-o', type=click.Path(path_type=Path), help='Save architecture diagrams to file')
+@click.option('--focus', '-f', help='Focus area for architecture analysis')
+@click.pass_context
+def architecture(ctx, repo, token, output_file, focus):
+    """Generate system architecture diagrams and API analysis for a repository."""
+    
+    try:
+        owner, repo_name = repo.split('/', 1)
+        
+        config = AnalyzerFactory.create_default()
+        if token:
+            config.github.token = token
+        config.focus_area = focus
+        config.max_stories = 0  # Skip user stories for architecture-only analysis
+        config.output_format = OutputFormat.MARKDOWN
+        
+        if output_file:
+            config.output_file = output_file
+        else:
+            # Generate default filename for architecture analysis
+            default_filename = f"{owner}-{repo_name}-architecture.md"
+            config.output_file = Path(default_filename)
+        
+        # Store flags for architecture-only analysis
+        config.metadata = getattr(config, 'metadata', {})
+        config.metadata['comprehensive'] = True
+        config.metadata['include_api_analysis'] = True
+        config.metadata['include_architecture'] = True
+        config.metadata['architecture_only'] = True
+        
+        # Run architecture analysis
+        asyncio.run(_run_architecture_analysis(owner, repo_name, config))
         
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -179,6 +235,124 @@ def info(ctx, repo, token):
         if ctx.obj.get('verbose'):
             console.print_exception()
         sys.exit(1)
+
+
+async def _run_comprehensive_analysis(owner: str, repo_name: str, config: AnalyzerConfig):
+    """Run comprehensive repository analysis with architecture diagrams."""
+    
+    console.print(Panel(f"🔍 Comprehensive Analysis: [bold blue]{owner}/{repo_name}[/bold blue]", style="blue"))
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console
+    ) as progress:
+        
+        task1 = progress.add_task("Fetching repository information...", total=None)
+        
+        async with GitHubRepoAnalyzer(config) as analyzer:
+            try:
+                # Fetch repository info
+                repo_info = await analyzer._fetch_repository_info(owner, repo_name)
+                progress.update(task1, completed=True, description="✅ Repository information fetched")
+                
+                # Task 2: Conduct web research
+                task2 = progress.add_task("Conducting web research...", total=None)
+                web_results = await analyzer._conduct_web_research(repo_info)
+                progress.update(task2, completed=True, description="✅ Web research completed")
+                
+                # Task 3: Enhanced analysis with Claude
+                task3 = progress.add_task("Performing comprehensive technical analysis...", total=None)
+                
+                enhanced_analyzer = EnhancedClaudeAnalyzer(config.claude)
+                analysis_result = await enhanced_analyzer.analyze_repository_comprehensive(
+                    repo_info=repo_info,
+                    web_results=web_results,
+                    focus_area=config.focus_area,
+                    max_stories=config.max_stories,
+                    include_architecture=config.metadata.get('include_architecture', True),
+                    include_api_analysis=config.metadata.get('include_api_analysis', True)
+                )
+                
+                progress.update(task3, completed=True, description="✅ Comprehensive analysis completed")
+                
+                # Task 4: Format and display results
+                task4 = progress.add_task("Formatting comprehensive results...", total=None)
+                
+                # Display comprehensive results
+                _display_comprehensive_results(analysis_result, config)
+                
+                # Save to file if specified
+                if config.output_file:
+                    analyzer.output_formatter.save_to_file(analysis_result, config.output_file)
+                    console.print(f"\n💾 Results saved to: [bold green]{config.output_file}[/bold green]")
+                
+                progress.update(task4, completed=True, description="✅ Comprehensive analysis complete")
+                
+            except RepositoryNotFoundError:
+                console.print(f"[red]❌ Repository {owner}/{repo_name} not found[/red]")
+                sys.exit(1)
+            except ClaudeAnalysisError as e:
+                console.print(f"[red]❌ Enhanced analysis failed: {e}[/red]")
+                sys.exit(1)
+            except Exception as e:
+                console.print(f"[red]❌ Comprehensive analysis failed: {e}[/red]")
+                sys.exit(1)
+
+
+async def _run_architecture_analysis(owner: str, repo_name: str, config: AnalyzerConfig):
+    """Run architecture-focused analysis of a repository."""
+    
+    console.print(Panel(f"🏗️ Architecture Analysis: [bold blue]{owner}/{repo_name}[/bold blue]", style="blue"))
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console
+    ) as progress:
+        
+        task1 = progress.add_task("Fetching repository information...", total=None)
+        
+        async with GitHubRepoAnalyzer(config) as analyzer:
+            try:
+                # Fetch repository info
+                repo_info = await analyzer._fetch_repository_info(owner, repo_name)
+                progress.update(task1, completed=True, description="✅ Repository information fetched")
+                
+                # Task 2: Architecture analysis with Claude
+                task2 = progress.add_task("Analyzing system architecture...", total=None)
+                
+                enhanced_analyzer = EnhancedClaudeAnalyzer(config.claude)
+                analysis_result = await enhanced_analyzer.analyze_repository_comprehensive(
+                    repo_info=repo_info,
+                    web_results=[],  # Skip web research for architecture focus
+                    focus_area=config.focus_area,
+                    max_stories=0,  # No user stories for architecture analysis
+                    include_architecture=True,
+                    include_api_analysis=True
+                )
+                
+                progress.update(task2, completed=True, description="✅ Architecture analysis completed")
+                
+                # Task 3: Display architecture results
+                task3 = progress.add_task("Generating architecture report...", total=None)
+                
+                # Display architecture-focused results
+                _display_architecture_results(analysis_result, config)
+                
+                # Save to file
+                if config.output_file:
+                    analyzer.output_formatter.save_to_file(analysis_result, config.output_file)
+                    console.print(f"\n💾 Architecture report saved to: [bold green]{config.output_file}[/bold green]")
+                
+                progress.update(task3, completed=True, description="✅ Architecture report generated")
+                
+            except RepositoryNotFoundError:
+                console.print(f"[red]❌ Repository {owner}/{repo_name} not found[/red]")
+                sys.exit(1)
+            except Exception as e:
+                console.print(f"[red]❌ Architecture analysis failed: {e}[/red]")
+                sys.exit(1)
 
 
 async def _run_analysis(owner: str, repo_name: str, config: AnalyzerConfig):
@@ -334,6 +508,258 @@ async def _get_repo_info(owner: str, repo_name: str, config: AnalyzerConfig):
         sys.exit(1)
     except Exception as e:
         console.print(f"[red]❌ Error fetching repository information: {e}[/red]")
+
+
+def _display_comprehensive_results(analysis_result, config: AnalyzerConfig):
+    """Display comprehensive analysis results with architecture diagrams."""
+    
+    console.print("\n" + "="*100)
+    console.print(Panel(f"🏗️ Comprehensive Analysis: [bold blue]{analysis_result.repository.full_name}[/bold blue]", style="green"))
+    console.print("="*100)
+    
+    # Repository summary
+    console.print(f"\n📊 [bold]Repository Summary:[/bold]")
+    console.print(f"   Description: {analysis_result.repository.description or 'No description available'}")
+    console.print(f"   Language: {analysis_result.repository.language or 'Not specified'}")
+    console.print(f"   Stars: {analysis_result.repository.stars}")
+    console.print(f"   Topics: {', '.join(analysis_result.repository.topics) if analysis_result.repository.topics else 'None'}")
+    
+    # System Architecture Diagrams
+    if analysis_result.system_architecture:
+        console.print(f"\n🏗️ [bold]System Architecture:[/bold]")
+        
+        if analysis_result.system_architecture.system_diagram:
+            console.print("\n📐 [bold cyan]System Architecture Diagram:[/bold cyan]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.system_diagram)
+            console.print("```")
+        
+        if analysis_result.system_architecture.api_flow_diagram:
+            console.print("\n🔄 [bold cyan]API Flow Diagram:[/bold cyan]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.api_flow_diagram)
+            console.print("```")
+        
+        if analysis_result.system_architecture.data_flow_diagram:
+            console.print("\n💾 [bold cyan]Data Flow Diagram:[/bold cyan]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.data_flow_diagram)
+            console.print("```")
+        
+        if analysis_result.system_architecture.component_diagram:
+            console.print("\n🧩 [bold cyan]Component Architecture:[/bold cyan]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.component_diagram)
+            console.print("```")
+    
+    # API Analysis
+    if analysis_result.api_analysis:
+        console.print(f"\n🌐 [bold]API & Integration Analysis:[/bold]")
+        
+        if analysis_result.api_analysis.endpoints:
+            console.print("   [bold]API Endpoints:[/bold]")
+            for endpoint in analysis_result.api_analysis.endpoints[:5]:
+                if isinstance(endpoint, dict):
+                    console.print(f"   • {endpoint.get('method', 'GET')} {endpoint.get('path', endpoint.get('name', str(endpoint)))}")
+                else:
+                    console.print(f"   • {endpoint}")
+        
+        if analysis_result.api_analysis.external_services:
+            console.print("   [bold]External Services:[/bold]")
+            for service in analysis_result.api_analysis.external_services:
+                console.print(f"   • {service}")
+        
+        if analysis_result.api_analysis.websocket_events:
+            console.print("   [bold]WebSocket Events:[/bold]")
+            for event in analysis_result.api_analysis.websocket_events:
+                console.print(f"   • {event}")
+    
+    # Technical Deep Dive
+    if analysis_result.technical_deep_dive:
+        console.print(f"\n🔧 [bold]Technology Stack:[/bold]")
+        
+        tech_stack = analysis_result.technical_deep_dive.technology_stack
+        for category, technologies in tech_stack.items():
+            if technologies:
+                console.print(f"   [bold]{category.title()}:[/bold]")
+                for tech in technologies:
+                    console.print(f"   • {tech}")
+    
+    # User Stories Section
+    console.print(f"\n📝 [bold]User Stories ({len(analysis_result.user_stories)}):[/bold]")
+    
+    for i, story in enumerate(analysis_result.user_stories, 1):
+        console.print(f"\n🎯 [bold]Story {i}: {story.title}[/bold]")
+        console.print(f"   {story.description}")
+        
+        if story.acceptance_criteria:
+            console.print(f"   [bold]Acceptance Criteria:[/bold]")
+            for criterion in story.acceptance_criteria:
+                console.print(f"   • {criterion.description}")
+        
+        console.print(f"   [bold]Priority:[/bold] {story.priority.value} | [bold]Effort:[/bold] {story.effort.value}")
+        
+        if story.tags:
+            console.print(f"   [bold]Tags:[/bold] {', '.join(story.tags)}")
+        
+        console.print("   " + "-"*80)
+    
+    # Comprehensive Report
+    if analysis_result.comprehensive_report:
+        console.print(f"\n📋 [bold]Technical Report Summary:[/bold]")
+        # Show first few lines of the report
+        report_lines = analysis_result.comprehensive_report.split('\n')[:10]
+        for line in report_lines:
+            console.print(f"   {line}")
+        if len(analysis_result.comprehensive_report.split('\n')) > 10:
+            console.print("   [italic]... (truncated, see full report in output file)[/italic]")
+
+
+def _display_architecture_results(analysis_result, config: AnalyzerConfig):
+    """Display architecture-focused analysis results."""
+    
+    console.print("\n" + "="*100)
+    console.print(Panel(f"🏗️ Architecture Analysis: [bold blue]{analysis_result.repository.full_name}[/bold blue]", style="cyan"))
+    console.print("="*100)
+    
+    # Repository summary
+    console.print(f"\n📊 [bold]Repository Overview:[/bold]")
+    console.print(f"   • Description: {analysis_result.repository.description or 'No description available'}")
+    console.print(f"   • Primary Language: {analysis_result.repository.language or 'Not specified'}")
+    console.print(f"   • Stars: {analysis_result.repository.stars:,}")
+    console.print(f"   • Size: {analysis_result.repository.size:,} KB")
+    
+    # System Architecture Diagrams - Main Focus
+    if analysis_result.system_architecture:
+        console.print(f"\n🏗️ [bold yellow]SYSTEM ARCHITECTURE DIAGRAMS[/bold yellow]")
+        console.print("=" * 60)
+        
+        if analysis_result.system_architecture.system_diagram:
+            console.print("\n📐 [bold cyan]Overall System Architecture:[/bold cyan]")
+            console.print("[dim]Copy this Mermaid code to visualize the diagram:[/dim]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.system_diagram)
+            console.print("```")
+        
+        if analysis_result.system_architecture.api_flow_diagram:
+            console.print("\n🔄 [bold cyan]API & Data Flow:[/bold cyan]")
+            console.print("[dim]API request/response flow and data processing:[/dim]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.api_flow_diagram)
+            console.print("```")
+        
+        if analysis_result.system_architecture.component_diagram:
+            console.print("\n🧩 [bold cyan]Component Architecture:[/bold cyan]")
+            console.print("[dim]Internal component structure and relationships:[/dim]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.component_diagram)
+            console.print("```")
+        
+        if analysis_result.system_architecture.data_flow_diagram:
+            console.print("\n💾 [bold cyan]Data Flow Architecture:[/bold cyan]")
+            console.print("[dim]How data moves through the system:[/dim]")
+            console.print("```mermaid")
+            console.print(analysis_result.system_architecture.data_flow_diagram)
+            console.print("```")
+    
+    # API & Integration Analysis
+    if analysis_result.api_analysis:
+        console.print(f"\n🌐 [bold yellow]API & INTEGRATION ANALYSIS[/bold yellow]")
+        console.print("=" * 60)
+        
+        if analysis_result.api_analysis.endpoints:
+            console.print("\n📡 [bold]API Endpoints:[/bold]")
+            for i, endpoint in enumerate(analysis_result.api_analysis.endpoints[:10], 1):
+                if isinstance(endpoint, dict):
+                    method = endpoint.get('method', 'GET')
+                    path = endpoint.get('path', endpoint.get('name', 'Unknown'))
+                    desc = endpoint.get('description', '')
+                    console.print(f"   {i:2d}. [bold]{method}[/bold] {path}")
+                    if desc:
+                        console.print(f"       {desc}")
+                else:
+                    console.print(f"   {i:2d}. {endpoint}")
+        
+        if analysis_result.api_analysis.external_services:
+            console.print("\n🔗 [bold]External Services & Integrations:[/bold]")
+            for i, service in enumerate(analysis_result.api_analysis.external_services, 1):
+                console.print(f"   {i:2d}. {service}")
+        
+        if analysis_result.api_analysis.authentication_methods:
+            console.print("\n🔐 [bold]Authentication Methods:[/bold]")
+            for auth in analysis_result.api_analysis.authentication_methods:
+                console.print(f"   • {auth}")
+        
+        if analysis_result.api_analysis.websocket_events:
+            console.print("\n⚡ [bold]Real-time Events:[/bold]")
+            for event in analysis_result.api_analysis.websocket_events:
+                console.print(f"   • {event}")
+    
+    # Technology Stack Deep Dive
+    if analysis_result.technical_deep_dive:
+        console.print(f"\n🔧 [bold yellow]TECHNICAL DEEP DIVE[/bold yellow]")
+        console.print("=" * 60)
+        
+        tech_stack = analysis_result.technical_deep_dive.technology_stack
+        if tech_stack:
+            for category, technologies in tech_stack.items():
+                if technologies:
+                    console.print(f"\n🏷️ [bold]{category.replace('_', ' ').title()}:[/bold]")
+                    for tech in technologies:
+                        console.print(f"   • {tech}")
+        
+        # Build system info
+        if analysis_result.technical_deep_dive.build_system:
+            console.print(f"\n🏗️ [bold]Build System:[/bold]")
+            build_info = analysis_result.technical_deep_dive.build_system
+            for key, value in build_info.items():
+                if value:
+                    console.print(f"   • {key.replace('_', ' ').title()}: {value}")
+        
+        # Performance optimizations
+        if analysis_result.technical_deep_dive.performance_optimizations:
+            console.print(f"\n⚡ [bold]Performance Optimizations:[/bold]")
+            for opt in analysis_result.technical_deep_dive.performance_optimizations:
+                console.print(f"   • {opt}")
+        
+        # Security features
+        if analysis_result.technical_deep_dive.security_features:
+            console.print(f"\n🛡️ [bold]Security Features:[/bold]")
+            for security in analysis_result.technical_deep_dive.security_features:
+                console.print(f"   • {security}")
+    
+    # Technical Report Summary
+    if analysis_result.comprehensive_report:
+        console.print(f"\n📋 [bold yellow]TECHNICAL INSIGHTS[/bold yellow]")
+        console.print("=" * 60)
+        # Show key insights from the technical report
+        report_lines = analysis_result.comprehensive_report.split('\n')
+        key_sections = []
+        current_section = []
+        
+        for line in report_lines:
+            if line.startswith('#') and current_section:
+                key_sections.append('\n'.join(current_section))
+                current_section = [line]
+            else:
+                current_section.append(line)
+        
+        if current_section:
+            key_sections.append('\n'.join(current_section))
+        
+        # Show first 2-3 sections
+        for section in key_sections[:3]:
+            lines = section.split('\n')[:5]  # First 5 lines of each section
+            for line in lines:
+                if line.strip():
+                    console.print(f"   {line}")
+            console.print()
+        
+        if len(key_sections) > 3:
+            console.print("   [italic]... (Full technical report saved to output file)[/italic]")
+    
+    console.print(f"\n[bold green]✅ Architecture Analysis Complete![/bold green]")
+    console.print("[dim]Tip: Copy the Mermaid diagram codes above to visualize them at https://mermaid.live[/dim]")
 
 
 def _display_analysis_results(analysis_result, config: AnalyzerConfig):
