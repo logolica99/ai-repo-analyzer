@@ -43,19 +43,19 @@ pip install github-repo-analyzer
 
 ```bash
 # Basic analysis - user stories only
-github-repo-analyzer analyze --repo "owner/repo-name"
+github-repo-analyzer analyze "owner/repo-name"
 
 # Comprehensive analysis with architecture diagrams and API mapping
-github-repo-analyzer analyze --repo "owner/repo-name" --comprehensive
+github-repo-analyzer analyze "owner/repo-name" --comprehensive
 
 # Architecture-focused analysis (no user stories, just technical analysis)
-github-repo-analyzer architecture --repo "owner/repo-name"
+github-repo-analyzer architecture "owner/repo-name"
 
 # Analyze with custom output format
-github-repo-analyzer analyze --repo "owner/repo-name" --format json
+github-repo-analyzer analyze "owner/repo-name" --format json
 
 # Analyze private repository (requires GitHub token)
-github-repo-analyzer analyze --repo "owner/repo-name" --token "your-github-token"
+github-repo-analyzer analyze "owner/repo-name" --token "your-github-token"
 ```
 
 ### Advanced Options
@@ -63,7 +63,7 @@ github-repo-analyzer analyze --repo "owner/repo-name" --token "your-github-token
 ```bash
 # Generate comprehensive analysis with specific focus
 github-repo-analyzer analyze \
-  --repo "owner/repo-name" \
+  "owner/repo-name" \
   --comprehensive \
   --focus "scalability" \
   --max-stories 8 \
@@ -71,13 +71,13 @@ github-repo-analyzer analyze \
 
 # Architecture analysis with focus on specific area
 github-repo-analyzer architecture \
-  --repo "owner/repo-name" \
+  "owner/repo-name" \
   --focus "microservices" \
   --output-file "architecture-report.md"
 
 # Full comprehensive analysis with all features
 github-repo-analyzer analyze \
-  --repo "owner/repo-name" \
+  "owner/repo-name" \
   --comprehensive \
   --include-architecture \
   --include-api-analysis \
@@ -88,7 +88,7 @@ github-repo-analyzer analyze \
 ### Command Options
 
 #### `analyze` Command
-- `--repo`: GitHub repository in format "owner/repo-name" (required)
+- `repo`: GitHub repository in format "owner/repo-name" (required)
 - `--token`: GitHub personal access token for private repositories
 - `--comprehensive`: Enable comprehensive analysis with architecture diagrams and technical deep dive
 - `--include-architecture`: Include system architecture diagrams (default: true with --comprehensive)
@@ -100,7 +100,7 @@ github-repo-analyzer analyze \
 - `--system-prompt`: Custom system prompt for Claude
 
 #### `architecture` Command
-- `--repo`: GitHub repository in format "owner/repo-name" (required)
+- `repo`: GitHub repository in format "owner/repo-name" (required)
 - `--token`: GitHub personal access token for private repositories
 - `--focus`: Focus area for architecture analysis
 - `--output-file`: Save architecture diagrams to file (default: auto-generated)
@@ -113,7 +113,7 @@ github-repo-analyzer analyze \
 ### Example 1: Basic Analysis
 
 ```bash
-github-repo-analyzer analyze --repo "facebook/react"
+github-repo-analyzer analyze "facebook/react"
 ```
 
 This will analyze the React repository and generate user stories focused on the core functionality.
@@ -122,7 +122,7 @@ This will analyze the React repository and generate user stories focused on the 
 
 ```bash
 github-repo-analyzer analyze \
-  --repo "microsoft/vscode" \
+  "microsoft/vscode" \
   --focus "developer-productivity" \
   --max-stories 8
 ```
@@ -133,7 +133,7 @@ This will analyze VS Code with a focus on developer productivity features.
 
 ```bash
 github-repo-analyzer analyze \
-  --repo "excalidraw/excalidraw" \
+  "excalidraw/excalidraw" \
   --comprehensive \
   --format markdown \
   --output-file "excalidraw-full-analysis.md"
@@ -145,11 +145,27 @@ This generates a comprehensive analysis with system architecture diagrams, API m
 
 ```bash
 github-repo-analyzer architecture \
-  --repo "facebook/react" \
+  "facebook/react" \
   --focus "component-architecture"
 ```
 
 This focuses purely on system architecture and technical analysis without user stories.
+
+### Example 5: Test Enhanced Architecture Analysis
+
+Test the comprehensive architecture analysis with Excalidraw:
+
+```bash
+github-repo-analyzer architecture \
+  "excalidraw/excalidraw" \
+  --output-file "excalidraw-comprehensive-architecture.md"
+```
+
+This will generate a comprehensive technical analysis including:
+- **🏗️ System Architecture Diagrams**: Mermaid diagrams showing overall system, API flows, component relationships, and data flows
+- **🌐 API & Integration Analysis**: Detailed API endpoints, external services, authentication methods, and WebSocket events
+- **🔧 Technical Deep Dive**: Technology stack breakdown, build system details, performance optimizations, and security features
+- **📋 Full Technical Report**: Professional markdown documentation ready for teams and stakeholders
 
 ## Output Formats
 
