@@ -14,6 +14,15 @@ class OutputFormat(Enum):
     TEXT = "text"
     JSON = "json"
     MARKDOWN = "markdown"
+    
+    def get_file_extension(self) -> str:
+        """Get the appropriate file extension for the output format."""
+        if self == OutputFormat.JSON:
+            return ".json"
+        elif self == OutputFormat.MARKDOWN:
+            return ".md"
+        else:
+            return ".txt"
 
 
 class StoryPriority(Enum):
@@ -30,6 +39,25 @@ class StoryEffort(Enum):
     MEDIUM = "Medium"
     LARGE = "Large"
     EXTRA_LARGE = "Extra Large"
+
+
+class TestType(Enum):
+    """Types of tests that can be generated."""
+    UNIT = "unit"
+    INTEGRATION = "integration"
+    END_TO_END = "e2e"
+    API = "api"
+    UI = "ui"
+    PERFORMANCE = "performance"
+    SECURITY = "security"
+
+
+class TestPriority(Enum):
+    """Priority levels for test cases."""
+    LOW = "Low"
+    MEDIUM = "Medium"
+    HIGH = "High"
+    CRITICAL = "Critical"
 
 
 @dataclass
@@ -50,6 +78,55 @@ class UserStory:
     effort: StoryEffort
     tags: List[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class TestCase:
+    """A test case generated from user stories."""
+    id: int
+    title: str
+    description: str
+    test_type: TestType
+    priority: TestPriority
+    user_story_id: int
+    user_story_title: str
+    test_steps: List[str]
+    expected_results: List[str]
+    prerequisites: List[str] = field(default_factory=list)
+    test_data: Dict[str, Any] = field(default_factory=dict)
+    tags: List[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class TestSuite:
+    """A collection of related test cases."""
+    id: int
+    name: str
+    description: str
+    test_cases: List[TestCase]
+    test_type: TestType
+    user_story_ids: List[int]
+    total_tests: int = 0
+    created_at: datetime = field(default_factory=datetime.now)
+    
+    def __post_init__(self):
+        self.total_tests = len(self.test_cases)
+
+
+@dataclass
+class TestDocumentation:
+    """Comprehensive test documentation including test cases and suites."""
+    repository_name: str
+    analysis_date: datetime
+    total_test_cases: int
+    test_suites: List[TestSuite]
+    test_coverage: Dict[str, float]  # Coverage by test type
+    testing_strategy: str
+    test_environment_requirements: List[str]
+    execution_instructions: str
+    maintenance_notes: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -154,7 +231,7 @@ class CodeAnalysis:
     test_coverage: Optional[str]
     documentation_quality: str
     
-    # Enhanced analysis
+    # Enhanced analysis results
     system_architecture: Optional[SystemArchitecture] = None
     api_analysis: Optional[APIAnalysis] = None
     technical_deep_dive: Optional[TechnicalDeepDive] = None
@@ -178,3 +255,17 @@ class AnalysisResult:
     api_analysis: Optional[APIAnalysis] = None
     technical_deep_dive: Optional[TechnicalDeepDive] = None
     comprehensive_report: Optional[str] = None  # Full technical report
+
+
+@dataclass
+class TestGenerationConfig:
+    """Configuration for test generation."""
+    include_unit_tests: bool = True
+    include_integration_tests: bool = True
+    include_e2e_tests: bool = True
+    include_api_tests: bool = True
+    max_tests_per_story: int = 5
+    test_framework: Optional[str] = None  # Auto-detected from repository
+    test_language: Optional[str] = None  # Auto-detected from repository
+    focus_area: Optional[str] = None
+    output_format: OutputFormat = OutputFormat.MARKDOWN

@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import List, Optional
 from pathlib import Path
 
-from .types import AnalysisResult, OutputFormat
+from .types import AnalysisResult, OutputFormat, TestDocumentation
 
 
 class OutputFormatter:
@@ -424,6 +424,292 @@ class OutputFormatter:
                 
         except Exception as e:
             raise IOError(f"Failed to save output to file {file_path}: {e}")
+    
+    def format_test_documentation(self, test_doc: TestDocumentation) -> str:
+        """Format test documentation according to the specified output format."""
+        if self.output_format == OutputFormat.JSON:
+            return self._format_test_documentation_json(test_doc)
+        elif self.output_format == OutputFormat.MARKDOWN:
+            return self._format_test_documentation_markdown(test_doc)
+        else:
+            return self._format_test_documentation_text(test_doc)
+    
+    def _format_test_documentation_text(self, test_doc: TestDocumentation) -> str:
+        """Format test documentation as plain text."""
+        lines = []
+        
+        # Header
+        lines.append(f"🧪 Test Documentation for {test_doc.repository_name}")
+        lines.append("=" * (len(test_doc.repository_name) + 30))
+        lines.append("")
+        
+        # Summary
+        lines.append("📊 Test Summary:")
+        lines.append(f"  • Total Test Cases: {test_doc.total_test_cases}")
+        lines.append(f"  • Total Test Suites: {len(test_doc.test_suites)}")
+        lines.append(f"  • Analysis Date: {test_doc.analysis_date.strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append("")
+        
+        # Test coverage
+        if test_doc.test_coverage:
+            lines.append("📈 Test Coverage by Type:")
+            for test_type, coverage in test_doc.test_coverage.items():
+                lines.append(f"  • {test_type.title()}: {coverage:.1f}%")
+            lines.append("")
+        
+        # Test suites
+        lines.append("🧪 Test Suites:")
+        lines.append("")
+        
+        for i, suite in enumerate(test_doc.test_suites, 1):
+            lines.append(f"📋 Suite {i}: {suite.name}")
+            lines.append(f"   Description: {suite.description}")
+            lines.append(f"   Test Type: {suite.test_type.value.title()}")
+            lines.append(f"   Total Tests: {suite.total_tests}")
+            lines.append(f"   User Stories: {', '.join(map(str, suite.user_story_ids))}")
+            lines.append("")
+            
+            # Test cases
+            lines.append("   Test Cases:")
+            for j, test_case in enumerate(suite.test_cases, 1):
+                lines.append(f"     {j}. {test_case.title}")
+                lines.append(f"        Description: {test_case.description}")
+                lines.append(f"        Type: {test_case.test_type.value.title()}")
+                lines.append(f"        Priority: {test_case.priority.value}")
+                lines.append(f"        User Story: {test_case.user_story_title}")
+                lines.append("")
+                
+                if test_case.test_steps:
+                    lines.append("        Test Steps:")
+                    for step in test_case.test_steps:
+                        lines.append(f"          • {step}")
+                    lines.append("")
+                
+                if test_case.expected_results:
+                    lines.append("        Expected Results:")
+                    for result in test_case.expected_results:
+                        lines.append(f"          • {result}")
+                    lines.append("")
+                
+                if test_case.prerequisites:
+                    lines.append("        Prerequisites:")
+                    for prereq in test_case.prerequisites:
+                        lines.append(f"          • {prereq}")
+                    lines.append("")
+                
+                if test_case.tags:
+                    lines.append(f"        Tags: {', '.join(test_case.tags)}")
+                
+                lines.append("        " + "-" * 40)
+                lines.append("")
+            
+            lines.append("   " + "-" * 60)
+            lines.append("")
+        
+        # Testing strategy
+        if test_doc.testing_strategy:
+            lines.append("📋 Testing Strategy:")
+            lines.append("")
+            lines.append(test_doc.testing_strategy)
+            lines.append("")
+        
+        # Environment requirements
+        if test_doc.test_environment_requirements:
+            lines.append("🔧 Test Environment Requirements:")
+            for req in test_doc.test_environment_requirements:
+                lines.append(f"  • {req}")
+            lines.append("")
+        
+        # Execution instructions
+        if test_doc.execution_instructions:
+            lines.append("▶️ Execution Instructions:")
+            lines.append("")
+            lines.append(test_doc.execution_instructions)
+            lines.append("")
+        
+        # Maintenance notes
+        if test_doc.maintenance_notes:
+            lines.append("🔧 Maintenance Notes:")
+            lines.append("")
+            lines.append(test_doc.maintenance_notes)
+            lines.append("")
+        
+        return "\n".join(lines)
+    
+    def _format_test_documentation_markdown(self, test_doc: TestDocumentation) -> str:
+        """Format test documentation as markdown."""
+        lines = []
+        
+        # Header
+        lines.append(f"# 🧪 Test Documentation for {test_doc.repository_name}")
+        lines.append("")
+        lines.append(f"**Analysis Date:** {test_doc.analysis_date.strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append("")
+        
+        # Summary
+        lines.append("## 📊 Test Summary")
+        lines.append("")
+        lines.append(f"- **Total Test Cases:** {test_doc.total_test_cases}")
+        lines.append(f"- **Total Test Suites:** {len(test_doc.test_suites)}")
+        lines.append("")
+        
+        # Test coverage
+        if test_doc.test_coverage:
+            lines.append("## 📈 Test Coverage by Type")
+            lines.append("")
+            for test_type, coverage in test_doc.test_coverage.items():
+                lines.append(f"- **{test_type.title()}:** {coverage:.1f}%")
+            lines.append("")
+        
+        # Test suites
+        lines.append("## 🧪 Test Suites")
+        lines.append("")
+        
+        for i, suite in enumerate(test_doc.test_suites, 1):
+            lines.append(f"### 📋 Suite {i}: {suite.name}")
+            lines.append("")
+            lines.append(f"**Description:** {suite.description}")
+            lines.append(f"**Test Type:** {suite.test_type.value.title()}")
+            lines.append(f"**Total Tests:** {suite.total_tests}")
+            lines.append(f"**User Stories:** {', '.join(map(str, suite.user_story_ids))}")
+            lines.append("")
+            
+            # Test cases
+            lines.append("#### Test Cases")
+            lines.append("")
+            
+            for j, test_case in enumerate(suite.test_cases, 1):
+                lines.append(f"**{j}. {test_case.title}**")
+                lines.append("")
+                lines.append(f"*{test_case.description}*")
+                lines.append("")
+                lines.append(f"- **Type:** {test_case.test_type.value.title()}")
+                lines.append(f"- **Priority:** {test_case.priority.value}")
+                lines.append(f"- **User Story:** {test_case.user_story_title}")
+                lines.append("")
+                
+                if test_case.test_steps:
+                    lines.append("**Test Steps:**")
+                    lines.append("")
+                    for step in test_case.test_steps:
+                        lines.append(f"1. {step}")
+                    lines.append("")
+                
+                if test_case.expected_results:
+                    lines.append("**Expected Results:**")
+                    lines.append("")
+                    for result in test_case.expected_results:
+                        lines.append(f"- {result}")
+                    lines.append("")
+                
+                if test_case.prerequisites:
+                    lines.append("**Prerequisites:**")
+                    lines.append("")
+                    for prereq in test_case.prerequisites:
+                        lines.append(f"- {prereq}")
+                    lines.append("")
+                
+                if test_case.tags:
+                    lines.append(f"**Tags:** {', '.join(test_case.tags)}")
+                
+                lines.append("---")
+                lines.append("")
+        
+        # Testing strategy
+        if test_doc.testing_strategy:
+            lines.append("## 📋 Testing Strategy")
+            lines.append("")
+            lines.append(test_doc.testing_strategy)
+            lines.append("")
+        
+        # Environment requirements
+        if test_doc.test_environment_requirements:
+            lines.append("## 🔧 Test Environment Requirements")
+            lines.append("")
+            for req in test_doc.test_environment_requirements:
+                lines.append(f"- {req}")
+            lines.append("")
+        
+        # Execution instructions
+        if test_doc.execution_instructions:
+            lines.append("## ▶️ Execution Instructions")
+            lines.append("")
+            lines.append(test_doc.execution_instructions)
+            lines.append("")
+        
+        # Maintenance notes
+        if test_doc.maintenance_notes:
+            lines.append("## 🔧 Maintenance Notes")
+            lines.append("")
+            lines.append(test_doc.maintenance_notes)
+            lines.append("")
+        
+        return "\n".join(lines)
+    
+    def _format_test_documentation_json(self, test_doc: TestDocumentation) -> str:
+        """Format test documentation as JSON."""
+        import json
+        
+        # Convert to dictionary
+        test_data = {
+            "repository_name": test_doc.repository_name,
+            "analysis_date": test_doc.analysis_date.isoformat(),
+            "total_test_cases": test_doc.total_test_cases,
+            "test_suites": [],
+            "test_coverage": test_doc.test_coverage,
+            "testing_strategy": test_doc.testing_strategy,
+            "test_environment_requirements": test_doc.test_environment_requirements,
+            "execution_instructions": test_doc.execution_instructions,
+            "maintenance_notes": test_doc.maintenance_notes,
+            "metadata": test_doc.metadata
+        }
+        
+        # Convert test suites
+        for suite in test_doc.test_suites:
+            suite_data = {
+                "id": suite.id,
+                "name": suite.name,
+                "description": suite.description,
+                "test_type": suite.test_type.value,
+                "user_story_ids": suite.user_story_ids,
+                "total_tests": suite.total_tests,
+                "created_at": suite.created_at.isoformat(),
+                "test_cases": []
+            }
+            
+            # Convert test cases
+            for test_case in suite.test_cases:
+                test_case_data = {
+                    "id": test_case.id,
+                    "title": test_case.title,
+                    "description": test_case.description,
+                    "test_type": test_case.test_type.value,
+                    "priority": test_case.priority.value,
+                    "user_story_id": test_case.user_story_id,
+                    "user_story_title": test_case.user_story_title,
+                    "test_steps": test_case.test_steps,
+                    "expected_results": test_case.expected_results,
+                    "prerequisites": test_case.prerequisites,
+                    "test_data": test_case.test_data,
+                    "tags": test_case.tags,
+                    "created_at": test_case.created_at.isoformat()
+                }
+                suite_data["test_cases"].append(test_case_data)
+            
+            test_data["test_suites"].append(suite_data)
+        
+        return json.dumps(test_data, indent=2, ensure_ascii=False)
+    
+    def save_test_documentation_to_file(self, test_doc: TestDocumentation, file_path: Path) -> None:
+        """Save the formatted test documentation to a file."""
+        try:
+            content = self.format_test_documentation(test_doc)
+            
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+                
+        except Exception as e:
+            raise IOError(f"Failed to save test documentation to file {file_path}: {e}")
     
     def get_file_extension(self) -> str:
         """Get the appropriate file extension for the current output format."""

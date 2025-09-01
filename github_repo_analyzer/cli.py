@@ -16,7 +16,8 @@ from rich.table import Table
 
 from .analyzer import GitHubRepoAnalyzer, AnalyzerFactory
 from .enhanced_analyzer import EnhancedClaudeAnalyzer
-from .types import OutputFormat, AnalyzerConfig
+from .test_generator import TestGenerator
+from .types import OutputFormat, AnalyzerConfig, TestGenerationConfig
 from .exceptions import (
     GitHubRepoAnalyzerError, RepositoryNotFoundError, ClaudeAnalysisError,
     ConfigurationError
@@ -229,6 +230,47 @@ def info(ctx, repo, token):
             config.github.token = token
         
         asyncio.run(_get_repo_info(owner, repo_name, config))
+        
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        if ctx.obj.get('verbose'):
+            console.print_exception()
+        sys.exit(1)
+
+
+@cli.command()
+@click.argument('repo', callback=validate_repo_format, required=True)
+@click.option('--token', '-t', help='GitHub personal access token')
+@click.option('--focus', '-f', help='Focus area for test generation')
+@click.option('--max-tests', '-m', type=int, default=5, help='Maximum tests per user story')
+@click.option('--include-unit', is_flag=True, default=True, help='Include unit tests')
+@click.option('--include-integration', is_flag=True, default=True, help='Include integration tests')
+@click.option('--include-e2e', is_flag=True, default=True, help='Include end-to-end tests')
+@click.option('--include-api', is_flag=True, default=True, help='Include API tests')
+@click.option('--format', 'output_format', callback=validate_output_format, default='markdown', help='Output format')
+@click.option('--output-file', '-o', type=click.Path(path_type=Path), help='Save test documentation to file')
+@click.pass_context
+def tests(ctx, repo, token, focus, max_tests, include_unit, include_integration, include_e2e, include_api, output_format, output_file):
+    """Generate comprehensive test cases and documentation from user stories."""
+    
+    try:
+        owner, repo_name = repo.split('/', 1)
+        
+        config = AnalyzerFactory.create_default()
+        if token:
+            config.github.token = token
+        config.focus_area = focus
+        config.output_format = output_format
+        
+        if output_file:
+            config.output_file = output_file
+        else:
+            # Generate default filename for test documentation
+            default_filename = f"{owner}-{repo_name}-tests{output_format.get_file_extension()}"
+            config.output_file = Path(default_filename)
+        
+        # Run test generation
+        asyncio.run(_run_test_generation(owner, repo_name, config, max_tests, include_unit, include_integration, include_e2e, include_api))
         
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -760,6 +802,164 @@ def _display_architecture_results(analysis_result, config: AnalyzerConfig):
     
     console.print(f"\n[bold green]✅ Architecture Analysis Complete![/bold green]")
     console.print("[dim]Tip: Copy the Mermaid diagram codes above to visualize them at https://mermaid.live[/dim]")
+
+
+async def _run_test_generation(
+    owner: str, 
+    repo_name: str, 
+    config: AnalyzerConfig,
+    max_tests: int,
+    include_unit: bool,
+    include_integration: bool,
+    include_e2e: bool,
+    include_api: bool
+):
+    """Run test generation for a repository."""
+    
+    console.print(Panel(f"🧪 Test Generation: [bold blue]{owner}/{repo_name}[/bold blue]", style="green"))
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console
+    ) as progress:
+        
+        task1 = progress.add_task("Fetching repository information...", total=None)
+        
+        async with GitHubRepoAnalyzer(config) as analyzer:
+            try:
+                # Fetch repository info
+                repo_info = await analyzer._fetch_repository_info(owner, repo_name)
+                progress.update(task1, completed=True, description="✅ Repository information fetched")
+                
+                # Task 2: Conduct web research
+                task2 = progress.add_task("Conducting web research...", total=None)
+                web_results = await analyzer._conduct_web_research(repo_info)
+                progress.update(task2, completed=True, description="✅ Web research completed")
+                
+                # Task 3: Generate user stories first
+                task3 = progress.add_task("Generating user stories for test generation...", total=None)
+                
+                enhanced_analyzer = EnhancedClaudeAnalyzer(config.claude)
+                analysis_result = await enhanced_analyzer.analyze_repository_comprehensive(
+                    repo_info=repo_info,
+                    web_results=web_results,
+                    focus_area=config.focus_area,
+                    max_stories=5,  # Generate a few stories for testing
+                    include_architecture=False,  # Skip architecture for test generation
+                    include_api_analysis=False
+                )
+                
+                progress.update(task3, completed=True, description="✅ User stories generated")
+                
+                # Task 4: Generate tests from user stories
+                task4 = progress.add_task("Generating comprehensive test cases...", total=None)
+                
+                # Create test generation configuration
+                test_config = TestGenerationConfig(
+                    include_unit_tests=include_unit,
+                    include_integration_tests=include_integration,
+                    include_e2e_tests=include_e2e,
+                    include_api_tests=include_api,
+                    max_tests_per_story=max_tests,
+                    focus_area=config.focus_area,
+                    output_format=config.output_format
+                )
+                
+                test_generator = TestGenerator(test_config)
+                test_documentation = await test_generator.generate_tests_from_analysis(
+                    analysis_result, repo_info
+                )
+                
+                progress.update(task4, completed=True, description="✅ Test cases generated")
+                
+                # Task 5: Display and save results
+                task5 = progress.add_task("Formatting and saving test documentation...", total=None)
+                
+                # Display test generation results
+                _display_test_generation_results(test_documentation, config)
+                
+                # Save to file if specified
+                if config.output_file:
+                    # Create a test output formatter
+                    from .output_formatter import OutputFormatter
+                    test_formatter = OutputFormatter(config.output_format)
+                    test_formatter.save_test_documentation_to_file(test_documentation, config.output_file)
+                    console.print(f"\n💾 Test documentation saved to: [bold green]{config.output_file}[/bold green]")
+                
+                progress.update(task5, completed=True, description="✅ Test generation complete")
+                
+            except RepositoryNotFoundError:
+                console.print(f"[red]❌ Repository {owner}/{repo_name} not found[/red]")
+                sys.exit(1)
+            except Exception as e:
+                console.print(f"[red]❌ Test generation failed: {e}[/red]")
+                if config.verbose:
+                    console.print_exception()
+                sys.exit(1)
+
+
+def _display_test_generation_results(test_documentation, config: AnalyzerConfig):
+    """Display the test generation results."""
+    
+    console.print("\n" + "="*80)
+    console.print(Panel(f"🧪 Test Documentation for [bold blue]{test_documentation.repository_name}[/bold blue]", style="green"))
+    console.print("="*80)
+    
+    # Test summary
+    console.print(f"\n📊 [bold]Test Summary:[/bold]")
+    console.print(f"   Total Test Cases: {test_documentation.total_test_cases}")
+    console.print(f"   Total Test Suites: {len(test_documentation.test_suites)}")
+    console.print(f"   Analysis Date: {test_documentation.analysis_date.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    # Test coverage
+    if test_documentation.test_coverage:
+        console.print(f"\n📈 [bold]Test Coverage by Type:[/bold]")
+        for test_type, coverage in test_documentation.test_coverage.items():
+            console.print(f"   • {test_type.title()}: {coverage:.1f}%")
+    
+    # Test suites
+    console.print(f"\n🧪 [bold]Test Suites ({len(test_documentation.test_suites)}):[/bold]")
+    
+    for i, suite in enumerate(test_documentation.test_suites, 1):
+        console.print(f"\n📋 [bold]Suite {i}: {suite.name}[/bold]")
+        console.print(f"   Description: {suite.description}")
+        console.print(f"   Test Type: {suite.test_type.value.title()}")
+        console.print(f"   Total Tests: {suite.total_tests}")
+        console.print(f"   User Stories: {', '.join(map(str, suite.user_story_ids))}")
+        
+        # Show first few test cases
+        console.print(f"   [bold]Test Cases:[/bold]")
+        for j, test_case in enumerate(suite.test_cases[:3], 1):  # Show first 3
+            console.print(f"     {j}. {test_case.title} ({test_case.priority.value})")
+        
+        if len(suite.test_cases) > 3:
+            console.print(f"     ... and {len(suite.test_cases) - 3} more tests")
+        
+        console.print("   " + "-"*60)
+    
+    # Testing strategy
+    if test_documentation.testing_strategy:
+        console.print(f"\n📋 [bold]Testing Strategy:[/bold]")
+        strategy_lines = test_documentation.testing_strategy.split('\n')[:10]  # First 10 lines
+        for line in strategy_lines:
+            if line.strip():
+                console.print(f"   {line}")
+        
+        if len(test_documentation.testing_strategy.split('\n')) > 10:
+            console.print("   [italic]... (Full testing strategy saved to output file)[/italic]")
+    
+    # Environment requirements
+    if test_documentation.test_environment_requirements:
+        console.print(f"\n🔧 [bold]Test Environment Requirements:[/bold]")
+        for req in test_documentation.test_environment_requirements[:8]:  # Show first 8
+            console.print(f"   • {req}")
+        
+        if len(test_documentation.test_environment_requirements) > 8:
+            console.print(f"   ... and {len(test_documentation.test_environment_requirements) - 8} more requirements")
+    
+    console.print(f"\n[bold green]✅ Test Generation Complete![/bold green]")
+    console.print("[dim]Tip: Review the generated tests and customize them for your specific testing needs[/dim]")
 
 
 def _display_analysis_results(analysis_result, config: AnalyzerConfig):
