@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 # Project-specific
-*.md
-!README.md
+/*.md
+!/README.md
 user-stories.*
 .github-analyzer-config.yaml
