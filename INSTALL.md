@@ -1,3 +1,4 @@
+
 # Installation Guide
 
 This guide will help you install and set up the GitHub Repository Analyzer tool.
@@ -20,12 +21,12 @@ cd github-repo-analyzer
 ```
 
 ### Step 2: Install Claude Code CLI
-
-The tool requires Claude Code CLI to be installed globally:
+e
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
+
 
 **Note:** You'll need to have Claude Code access and be authenticated. Follow the [Claude Code documentation](https://github.com/anthropics/claude-code-sdk-python) for setup instructions.
 
