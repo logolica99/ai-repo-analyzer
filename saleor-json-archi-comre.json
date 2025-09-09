@@ -1,0 +1,40 @@
+{
+  "repository": {
+    "full_name": "saleor/saleor",
+    "description": "Saleor Core: the high performance, composable, headless commerce API.",
+    "language": "Python",
+    "stars": 22047,
+    "forks": 5789,
+    "topics": [
+      "python",
+      "store",
+      "commerce",
+      "shop",
+      "ecommerce",
+      "cart",
+      "graphql",
+      "headless",
+      "headless-commerce",
+      "multichannel",
+      "shopping-cart",
+      "composable",
+      "oms",
+      "pim",
+      "checkout",
+      "payments",
+      "order-management",
+      "e-commerce"
+    ],
+    "license": "BSD 3-Clause \"New\" or \"Revised\" License",
+    "created_at": "2013-02-12T16:46:39+00:00",
+    "updated_at": "2025-09-09T15:19:26+00:00"
+  },
+  "analysis": {
+    "date": "2025-09-09T10:56:06.440739",
+    "focus_area": null,
+    "tech_stack": [],
+    "key_features": [],
+    "target_users": []
+  },
+  "user_stories": []
+}

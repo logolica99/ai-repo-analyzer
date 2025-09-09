@@ -1,0 +1,30 @@
+{
+  "repository": {
+    "full_name": "TryGhost/Ghost",
+    "description": "Independent technology for modern publishing, memberships, subscriptions and newsletters.",
+    "language": "JavaScript",
+    "stars": 50535,
+    "forks": 11023,
+    "topics": [
+      "journalism",
+      "publishing",
+      "blogging",
+      "javascript",
+      "web-application",
+      "cms",
+      "nodejs",
+      "ghost"
+    ],
+    "license": "MIT License",
+    "created_at": "2013-05-04T11:09:13+00:00",
+    "updated_at": "2025-09-08T03:09:16+00:00"
+  },
+  "analysis": {
+    "date": "2025-09-07T20:58:49.801476",
+    "focus_area": "comprehensive",
+    "tech_stack": [],
+    "key_features": [],
+    "target_users": []
+  },
+  "user_stories": []
+}

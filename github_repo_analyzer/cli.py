@@ -157,8 +157,9 @@ def quick(ctx, repo, token, focus, max_stories, output_format, output_file):
 @click.option('--token', '-t', help='GitHub personal access token')
 @click.option('--output-file', '-o', type=click.Path(path_type=Path), help='Save architecture diagrams to file')
 @click.option('--focus', '-f', help='Focus area for architecture analysis')
+@click.option('--format', 'output_format', callback=validate_output_format, default='markdown', help='Output format (text, json, markdown)')
 @click.pass_context
-def architecture(ctx, repo, token, output_file, focus):
+def architecture(ctx, repo, token, output_file, focus, output_format):
     """Generate system architecture diagrams and API analysis for a repository."""
     
     try:
@@ -169,13 +170,13 @@ def architecture(ctx, repo, token, output_file, focus):
             config.github.token = token
         config.focus_area = focus
         config.max_stories = 0  # Skip user stories for architecture-only analysis
-        config.output_format = OutputFormat.MARKDOWN
+        config.output_format = output_format
         
         if output_file:
             config.output_file = output_file
         else:
             # Generate default filename for architecture analysis
-            default_filename = f"{owner}-{repo_name}-architecture.md"
+            default_filename = f"{owner}-{repo_name}-architecture{output_format.get_file_extension()}"
             config.output_file = Path(default_filename)
         
         # Store flags for architecture-only analysis
