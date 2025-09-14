@@ -1,0 +1,85 @@
+{
+  "repository": {
+    "fullName": "monicahq/monica",
+    "description": "Personal CRM. Remember everything about your friends, family and business relationships.",
+    "language": "PHP",
+    "stars": 23404,
+    "forks": 2348,
+    "topics": [
+      "laravel",
+      "crm",
+      "friends",
+      "family",
+      "social",
+      "prm",
+      "php",
+      "hacktoberfest"
+    ],
+    "license": "GNU Affero General Public License v3.0",
+    "createdAt": "2017-02-17T00:02:58+00:00",
+    "updatedAt": "2025-09-14T16:42:50+00:00"
+  },
+  "analysis": {
+    "date": "2025-09-14T10:00:42.771417",
+    "focusArea": null,
+    "techStack": [],
+    "keyFeatures": [
+      "Comprehensive Contact Relationship Management",
+      "Personal Life Documentation and Journaling System"
+    ],
+    "targetUsers": [
+      "busy professional with a large social network"
+    ]
+  },
+  "userStories": [
+    {
+      "id": 1,
+      "title": "Comprehensive Contact Relationship Management",
+      "description": "As a busy professional with a large social network, I want to systematically track and manage detailed information about my personal relationships, So that I can maintain meaningful connections with family, friends, and colleagues by remembering important details and staying proactive in my communications.",
+      "acceptanceCriteria": [
+        "I can create detailed contact profiles with personal information including names, genders, pronouns, job details, and contact information (phone, email, addresses)",
+        "I can establish and visualize bidirectional relationships between contacts with customizable relationship types (family, friends, colleagues, acquaintances)",
+        "I can log interaction history including phone calls, meetings, notes about conversations, and shared activities with timestamps",
+        "I can set up automated reminders for birthdays, anniversaries, and custom important dates with configurable notification preferences",
+        "I can organize contacts into custom groups based on interests, activities, or relationship types and assign roles within those groups",
+        "I can search across all contact information using full-text search to quickly find people or specific interaction details",
+        "I can import/export contact data using vCard format for data portability and backup purposes"
+      ],
+      "priority": "High",
+      "effort": "Large",
+      "tags": [
+        "contact-management",
+        "relationships",
+        "core-functionality",
+        "crm",
+        "social-network"
+      ],
+      "createdAt": "2025-09-14T10:00:42.771217"
+    },
+    {
+      "id": 2,
+      "title": "Personal Life Documentation and Journaling System",
+      "description": "As someone who values personal growth and memory preservation, I want to document my life experiences and track personal metrics in a structured way, So that I can reflect on my journey, maintain accountability for my goals, and preserve meaningful memories for future reference.",
+      "acceptanceCriteria": [
+        "I can create multiple journals for different purposes (personal growth, travel, family memories) with customizable templates and organization",
+        "I can write detailed journal posts with rich text, attach photos, and tag relevant people from my contact database",
+        "I can track personal goals with streak counters and progress indicators, receiving motivation through achievement milestones",
+        "I can log daily mood and emotional state using customizable parameters and view trends over time through analytics dashboards",
+        "I can create 'Slices of Life' - curated collections of meaningful moments and experiences organized by themes or time periods",
+        "I can set up and track custom life metrics (exercise habits, reading goals, social interactions) with visual progress reports",
+        "I can generate comprehensive reports and timeline visualizations of my personal growth journey and life events"
+      ],
+      "priority": "Medium",
+      "effort": "Extra Large",
+      "tags": [
+        "journaling",
+        "personal-growth",
+        "life-documentation",
+        "analytics",
+        "self-improvement",
+        "memory-preservation"
+      ],
+      "createdAt": "2025-09-14T10:00:42.771241"
+    }
+  ]
+}

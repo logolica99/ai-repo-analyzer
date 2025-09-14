@@ -62,9 +62,10 @@ export default function MermaidDiagram({ diagram, title }: MermaidDiagramProps) 
           const element = diagramRef.current
           if (element) {
             element.innerHTML = ''
-            const id = `mermaid-${title.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
+            const id = `mermaid-${title.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`
             const { svg } = await mermaid.default.render(id, diagram)
             element.innerHTML = svg
+            setRenderError(false) // Reset error state on successful render
           }
         } catch (error) {
           console.error('Failed to render diagram:', error)
@@ -82,7 +83,12 @@ export default function MermaidDiagram({ diagram, title }: MermaidDiagramProps) 
 
       renderDiagram()
     }
-  }, [isLoaded, diagram, title, renderError])
+  }, [isLoaded, diagram, title]) // Removed renderError from dependencies
+
+  // Reset error state when diagram changes
+  useEffect(() => {
+    setRenderError(false)
+  }, [diagram])
 
   const copyToClipboard = async () => {
     try {

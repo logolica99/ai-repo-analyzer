@@ -17,7 +17,6 @@ from .types import (
     AnalysisResult, ClaudeConfig, WebSearchResult, SystemArchitecture,
     APIAnalysis, TechnicalDeepDive, CodeAnalysis
 )
-from .mermaid_validator import MermaidValidator
 
 
 class EnhancedClaudeAnalyzer:
@@ -25,7 +24,6 @@ class EnhancedClaudeAnalyzer:
     
     def __init__(self, config: ClaudeConfig):
         self.config = config
-        self.mermaid_validator = MermaidValidator()
     
     async def analyze_repository_comprehensive(
         self,
@@ -54,7 +52,6 @@ class EnhancedClaudeAnalyzer:
             basic_analysis.api_analysis = enhanced_analysis.get('api_analysis')
             basic_analysis.technical_deep_dive = enhanced_analysis.get('technical_deep_dive')
             basic_analysis.comprehensive_report = enhanced_analysis.get('comprehensive_report')
-            
         
         return basic_analysis
     
@@ -130,25 +127,16 @@ class EnhancedClaudeAnalyzer:
                             if isinstance(block, TextBlock):
                                 analysis_data = self._extract_enhanced_analysis(block.text)
                                 analysis_results.update(analysis_data)
-                    elif hasattr(message, 'content') and hasattr(message.content, 'text'):
-                        # Handle ResultMessage or other message types with text content
-                        analysis_data = self._extract_enhanced_analysis(message.content.text)
-                        analysis_results.update(analysis_data)
                 return analysis_results
             
             # Set a reasonable timeout (5 minutes) for complex analysis
-            results = await asyncio.wait_for(run_enhanced_analysis(), timeout=1800)
+            results = await asyncio.wait_for(run_enhanced_analysis(), timeout=300)
             
         except asyncio.TimeoutError:
             print(f"Enhanced analysis timed out for {repo_info.name}, using robust fallback analysis")
             results = self._generate_robust_fallback_analysis(repo_info)
         except Exception as e:
             print(f"Enhanced analysis failed for {repo_info.name}: {e}")
-            results = self._generate_robust_fallback_analysis(repo_info)
-        
-        # If enhanced analysis returned no results, fall back to robust analysis
-        if not results or not any(results.values()):
-            print(f"Enhanced analysis returned no results for {repo_info.name}, using robust fallback analysis")
             results = self._generate_robust_fallback_analysis(repo_info)
         
         return results
@@ -373,20 +361,12 @@ class EnhancedClaudeAnalyzer:
             # Parse system architecture
             if "system_architecture" in json_content:
                 arch_data = json_content["system_architecture"]
-                
-                # Validate and fix Mermaid diagrams
-                system_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(arch_data.get("system_diagram", ""))
-                api_flow_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(arch_data.get("api_flow_diagram", ""))
-                data_flow_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(arch_data.get("data_flow_diagram", ""))
-                component_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(arch_data.get("component_diagram", ""))
-                deployment_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(arch_data.get("deployment_diagram", ""))
-                
                 analysis_data["system_architecture"] = SystemArchitecture(
-                    system_diagram=system_diagram,
-                    api_flow_diagram=api_flow_diagram,
-                    data_flow_diagram=data_flow_diagram,
-                    component_diagram=component_diagram,
-                    deployment_diagram=deployment_diagram
+                    system_diagram=arch_data.get("system_diagram", ""),
+                    api_flow_diagram=arch_data.get("api_flow_diagram", ""),
+                    data_flow_diagram=arch_data.get("data_flow_diagram", ""),
+                    component_diagram=arch_data.get("component_diagram", ""),
+                    deployment_diagram=arch_data.get("deployment_diagram")
                 )
             
             # Parse API analysis
@@ -528,26 +508,20 @@ class EnhancedClaudeAnalyzer:
         # Determine architecture type based on repository characteristics
         arch_type = self._determine_architecture_type(language, topics, description)
         
-        # Generate comprehensive, detailed system architecture
-        system_diagram = self._generate_detailed_system_diagram(repo_info, arch_type)
-        api_flow_diagram = self._generate_detailed_api_flow_diagram(repo_info, arch_type)
-        data_flow_diagram = self._generate_detailed_data_flow_diagram(repo_info, arch_type)
-        component_diagram = self._generate_detailed_component_diagram(repo_info, arch_type)
+        # Generate appropriate system architecture
+        system_diagram = self._generate_system_diagram(repo_info, arch_type)
+        api_flow_diagram = self._generate_api_flow_diagram(repo_info, arch_type)
+        data_flow_diagram = self._generate_data_flow_diagram(repo_info, arch_type)
+        component_diagram = self._generate_component_diagram(repo_info, arch_type)
         
-        # Validate and fix Mermaid diagrams
-        system_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(system_diagram)
-        api_flow_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(api_flow_diagram)
-        data_flow_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(data_flow_diagram)
-        component_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(component_diagram)
+        # Generate API analysis
+        api_analysis = self._generate_api_analysis(repo_info, arch_type)
         
-        # Generate detailed API analysis
-        api_analysis = self._generate_detailed_api_analysis(repo_info, arch_type)
-        
-        # Generate comprehensive technical deep dive
-        technical_deep_dive = self._generate_detailed_technical_deep_dive(repo_info, arch_type)
+        # Generate technical deep dive
+        technical_deep_dive = self._generate_technical_deep_dive(repo_info, arch_type)
         
         # Generate comprehensive report
-        comprehensive_report = self._generate_detailed_comprehensive_report(repo_info, arch_type)
+        comprehensive_report = self._generate_comprehensive_report(repo_info, arch_type)
         
         return {
             "system_architecture": SystemArchitecture(
@@ -608,638 +582,167 @@ class EnhancedClaudeAnalyzer:
             else:
                 return "general_application"
     
-    def _generate_detailed_system_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
-        """Generate detailed system architecture diagram based on repository characteristics."""
-        
-        # Get technology stack based on language and topics
-        tech_stack = self._infer_technology_stack(repo_info)
+    def _generate_system_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
+        """Generate system architecture diagram based on architecture type."""
         
         if arch_type == "web_application":
-            return self._generate_web_application_diagram(repo_info, tech_stack)
-        elif arch_type == "mobile_application":
-            return self._generate_mobile_application_diagram(repo_info, tech_stack)
-        elif arch_type == "library_framework":
-            return self._generate_library_framework_diagram(repo_info, tech_stack)
-        elif arch_type == "data_ml_application":
-            return self._generate_data_ml_diagram(repo_info, tech_stack)
-        elif arch_type == "devops_infrastructure":
-            return self._generate_devops_diagram(repo_info, tech_stack)
-        else:
-            return self._generate_general_application_diagram(repo_info, tech_stack)
-    
-    def _infer_technology_stack(self, repo_info: RepositoryInfo) -> Dict[str, List[str]]:
-        """Infer detailed technology stack from repository characteristics."""
-        language = repo_info.language or "Unknown"
-        topics = repo_info.topics or []
-        description = repo_info.description or ""
-        
-        tech_stack = {
-            "backend": [],
-            "frontend": [],
-            "database": [],
-            "cache": [],
-            "queue": [],
-            "monitoring": [],
-            "deployment": [],
-            "testing": []
-        }
-        
-        # Backend technologies
-        if language.lower() == "python":
-            tech_stack["backend"].extend(["Python", "Django/FastAPI", "ASGI Server"])
-            if "graphql" in topics:
-                tech_stack["backend"].append("GraphQL")
-        elif language.lower() == "javascript":
-            tech_stack["backend"].extend(["Node.js", "Express/Fastify", "V8 Runtime"])
-        elif language.lower() == "typescript":
-            tech_stack["backend"].extend(["TypeScript", "Node.js", "Express/NestJS"])
-        elif language.lower() == "java":
-            tech_stack["backend"].extend(["Java", "Spring Boot", "JVM"])
-        elif language.lower() == "go":
-            tech_stack["backend"].extend(["Go", "Gin/Echo", "Go Runtime"])
-        elif language.lower() == "rust":
-            tech_stack["backend"].extend(["Rust", "Actix/Axum", "Rust Runtime"])
-        elif language.lower() == "csharp":
-            tech_stack["backend"].extend(["C#", ".NET Core", "ASP.NET"])
-        
-        # Frontend technologies
-        if "react" in topics:
-            tech_stack["frontend"].extend(["React", "JSX", "Virtual DOM"])
-        if "vue" in topics:
-            tech_stack["frontend"].extend(["Vue.js", "Vuex", "Vue Router"])
-        if "angular" in topics:
-            tech_stack["frontend"].extend(["Angular", "TypeScript", "RxJS"])
-        if "svelte" in topics:
-            tech_stack["frontend"].extend(["Svelte", "SvelteKit"])
-        if "nextjs" in topics:
-            tech_stack["frontend"].extend(["Next.js", "React", "SSR/SSG"])
-        if "nuxt" in topics:
-            tech_stack["frontend"].extend(["Nuxt.js", "Vue.js", "SSR/SSG"])
-        
-        # Database technologies
-        if "postgresql" in topics or "postgres" in topics:
-            tech_stack["database"].extend(["PostgreSQL", "ACID Compliance"])
-        if "mysql" in topics:
-            tech_stack["database"].extend(["MySQL", "InnoDB"])
-        if "mongodb" in topics:
-            tech_stack["database"].extend(["MongoDB", "Document Store"])
-        if "redis" in topics:
-            tech_stack["cache"].extend(["Redis", "In-Memory Cache"])
-        if "elasticsearch" in topics:
-            tech_stack["database"].extend(["Elasticsearch", "Search Engine"])
-        
-        # Queue and background processing
-        if "celery" in topics:
-            tech_stack["queue"].extend(["Celery", "Redis/RabbitMQ", "Task Queue"])
-        if "kafka" in topics:
-            tech_stack["queue"].extend(["Apache Kafka", "Event Streaming"])
-        if "rabbitmq" in topics:
-            tech_stack["queue"].extend(["RabbitMQ", "Message Broker"])
-        
-        # Monitoring and observability
-        if "sentry" in topics:
-            tech_stack["monitoring"].extend(["Sentry", "Error Tracking"])
-        if "prometheus" in topics:
-            tech_stack["monitoring"].extend(["Prometheus", "Metrics"])
-        if "grafana" in topics:
-            tech_stack["monitoring"].extend(["Grafana", "Visualization"])
-        if "jaeger" in topics:
-            tech_stack["monitoring"].extend(["Jaeger", "Distributed Tracing"])
-        
-        # Deployment and infrastructure
-        if "docker" in topics:
-            tech_stack["deployment"].extend(["Docker", "Containerization"])
-        if "kubernetes" in topics or "k8s" in topics:
-            tech_stack["deployment"].extend(["Kubernetes", "Container Orchestration"])
-        if "aws" in topics:
-            tech_stack["deployment"].extend(["AWS", "Cloud Infrastructure"])
-        if "gcp" in topics:
-            tech_stack["deployment"].extend(["Google Cloud", "Cloud Infrastructure"])
-        if "azure" in topics:
-            tech_stack["deployment"].extend(["Microsoft Azure", "Cloud Infrastructure"])
-        
-        # Testing frameworks
-        if "pytest" in topics:
-            tech_stack["testing"].extend(["pytest", "Python Testing"])
-        if "jest" in topics:
-            tech_stack["testing"].extend(["Jest", "JavaScript Testing"])
-        if "cypress" in topics:
-            tech_stack["testing"].extend(["Cypress", "E2E Testing"])
-        if "playwright" in topics:
-            tech_stack["testing"].extend(["Playwright", "E2E Testing"])
-        
-        # Add defaults if empty
-        for category in tech_stack:
-            if not tech_stack[category]:
-                if category == "backend":
-                    tech_stack[category] = [language or "Backend Language"]
-                elif category == "database":
-                    tech_stack[category] = ["Database System"]
-                elif category == "cache":
-                    tech_stack[category] = ["Cache Layer"]
-                elif category == "monitoring":
-                    tech_stack[category] = ["Monitoring System"]
-                elif category == "deployment":
-                    tech_stack[category] = ["Deployment Platform"]
-                elif category == "testing":
-                    tech_stack[category] = ["Testing Framework"]
-        
-        return tech_stack
-    
-    def _generate_web_application_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        """Generate detailed web application architecture diagram."""
-        
-        # Extract key technologies safely
-        backend_tech = tech_stack.get("backend", ["Backend"])[0] if tech_stack.get("backend") and len(tech_stack.get("backend", [])) > 0 else "Backend"
-        frontend_tech = tech_stack.get("frontend", ["Frontend"])[0] if tech_stack.get("frontend") and len(tech_stack.get("frontend", [])) > 0 else "Frontend"
-        database_tech = tech_stack.get("database", ["Database"])[0] if tech_stack.get("database") and len(tech_stack.get("database", [])) > 0 else "Database"
-        cache_tech = tech_stack.get("cache", ["Cache"])[0] if tech_stack.get("cache") and len(tech_stack.get("cache", [])) > 0 else "Cache"
-        
-        # Determine if it's a headless/API-first architecture
-        is_api_first = any(topic in repo_info.topics for topic in ["api", "headless", "graphql", "rest"])
-        is_ecommerce = any(topic in repo_info.topics for topic in ["ecommerce", "commerce", "shop", "store", "cart", "checkout"])
-        is_cms = any(topic in repo_info.topics for topic in ["cms", "content", "blog", "cms"])
-        
-        if is_ecommerce:
-            return self._generate_ecommerce_diagram(repo_info, tech_stack)
-        elif is_cms:
-            return self._generate_cms_diagram(repo_info, tech_stack)
-        elif is_api_first:
-            return self._generate_api_first_diagram(repo_info, tech_stack)
-        else:
-            return self._generate_standard_web_diagram(repo_info, tech_stack)
-    
-    def _generate_ecommerce_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        """Generate e-commerce specific architecture diagram."""
-        
-        return f"""graph TB
-    subgraph "Client Layer"
-        WEB["🌐 Web Applications"]
-        MOBILE["📱 Mobile Apps"]
-        API_CLIENTS["🔧 API Clients"]
-    end
-
-    subgraph "API Gateway Layer"
-        NGINX["🔀 NGINX/Load Balancer"]
-        CORS["🛡️ CORS Middleware"]
-        RATE_LIMIT["⚡ Rate Limiting"]
-    end
-
-     subgraph "Application Layer"
-         BACKEND["🐍 {tech_stack.get('backend', ['Backend'])[0] if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 0 else 'Backend' if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 0 else 'Backend'}"]
-         API["🔗 {tech_stack.get('backend', ['API'])[1] if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 1 else 'API Server'}"]
-         ASGI["⚙️ ASGI Server"]
-        
-        subgraph "Core Modules"
-            ACCOUNT["👤 Account Management"]
-            PRODUCT["📦 Product Catalog"]
-            ORDER["📝 Order Management"]
-            CHECKOUT["🛒 Checkout Process"]
-            PAYMENT["💳 Payment Processing"]
-            SHIPPING["🚚 Shipping & Logistics"]
-            WAREHOUSE["🏪 Warehouse Management"]
-            CHANNEL["📺 Multi-Channel"]
-            WEBHOOK["🔔 Webhook System"]
-        end
-    end
-
-    subgraph "Background Processing"
-        CELERY["🔄 Celery Workers"]
-        BEAT["⏰ Celery Beat Scheduler"]
-        REDIS_QUEUE["📋 Redis Task Queue"]
-    end
-
-     subgraph "Data Layer"
-         POSTGRES["🐘 {tech_stack.get('database', ['PostgreSQL'])[0] if tech_stack.get('database') and len(tech_stack.get('database', [])) > 0 else 'PostgreSQL'}"]
-         REDIS["⚡ {tech_stack.get('cache', ['Redis'])[0] if tech_stack.get('cache') and len(tech_stack.get('cache', [])) > 0 else 'Redis'}"]
-         S3["☁️ Cloud Storage (S3/GCS/Azure)"]
-    end
-
-    subgraph "External Services"
-        PAYMENT_GW["💰 Payment Gateways<br/>(Stripe, Adyen, etc.)"]
-        SHIPPING_API["🚛 Shipping APIs"]
-        TAX_SERVICE["📊 Tax Services"]
-        EMAIL["📧 Email Services"]
-        MONITORING["📈 Monitoring<br/>(Sentry, OpenTelemetry)"]
-    end
-
-    subgraph "Extension Layer"
-        PLUGINS["🔌 Plugin System"]
-        APPS["📱 {repo_info.name} Apps"]
-        WEBHOOKS["🪝 External Webhooks"]
-    end
-
-    %% Client connections
-    WEB --> NGINX
-    MOBILE --> NGINX
-    API_CLIENTS --> NGINX
-
-    %% API Gateway connections
-    NGINX --> CORS
-    CORS --> RATE_LIMIT
-    RATE_LIMIT --> ASGI
-
-    %% Application layer connections
-    ASGI --> BACKEND
-    BACKEND --> API
-    API --> ACCOUNT
-    API --> PRODUCT
-    API --> ORDER
-    API --> CHECKOUT
-    API --> PAYMENT
-    API --> SHIPPING
-    API --> WAREHOUSE
-    API --> CHANNEL
-    API --> WEBHOOK
-
-    %% Background processing
-    BACKEND --> CELERY
-    CELERY --> REDIS_QUEUE
-    BEAT --> REDIS_QUEUE
-
-    %% Data layer connections
-    BACKEND --> POSTGRES
-    BACKEND --> REDIS
-    BACKEND --> S3
-    CELERY --> POSTGRES
-    CELERY --> REDIS
-
-    %% External service connections
-    PAYMENT --> PAYMENT_GW
-    SHIPPING --> SHIPPING_API
-    ORDER --> TAX_SERVICE
-    BACKEND --> EMAIL
-    BACKEND --> MONITORING
-
-    %% Extension layer
-    WEBHOOK --> PLUGINS
-    PLUGINS --> APPS
-    WEBHOOK --> WEBHOOKS
-
-    classDef clientLayer fill:#e1f5fe
-    classDef apiLayer fill:#f3e5f5
-    classDef appLayer fill:#e8f5e8
-    classDef bgLayer fill:#fff3e0
-    classDef dataLayer fill:#fce4ec
-    classDef externalLayer fill:#f1f8e9
-    classDef extensionLayer fill:#fff8e1
-
-    class WEB,MOBILE,API_CLIENTS clientLayer
-    class NGINX,CORS,RATE_LIMIT apiLayer
-    class BACKEND,API,ASGI,ACCOUNT,PRODUCT,ORDER,CHECKOUT,PAYMENT,SHIPPING,WAREHOUSE,CHANNEL,WEBHOOK appLayer
-    class CELERY,BEAT,REDIS_QUEUE bgLayer
-    class POSTGRES,REDIS,S3 dataLayer
-    class PAYMENT_GW,SHIPPING_API,TAX_SERVICE,EMAIL,MONITORING externalLayer
-    class PLUGINS,APPS,WEBHOOKS extensionLayer
-    end
-    """
-    
-    def _generate_cms_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        """Generate CMS-specific architecture diagram."""
-        return f"""graph TB
-    subgraph "Client Layer"
-        WEB["🌐 Web Applications"]
-        MOBILE["📱 Mobile Apps"]
-        API_CLIENTS["🔧 API Clients"]
-    end
-
-    subgraph "API Gateway Layer"
-        NGINX["🔀 NGINX/Load Balancer"]
-        CORS["🛡️ CORS Middleware"]
-        RATE_LIMIT["⚡ Rate Limiting"]
-    end
-
-    subgraph "Application Layer"
-        BACKEND["🐍 {tech_stack.get('backend', ['Backend'])[0] if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 0 else 'Backend'}"]
-        API["🔗 {tech_stack.get('backend', ['API'])[1] if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 1 else 'API Server'}"]
-        
-        subgraph "Core Modules"
-            CONTENT["📝 Content Management"]
-            MEDIA["🖼️ Media Management"]
-            USER["👤 User Management"]
-            PUBLISH["📤 Publishing System"]
-            SEARCH["🔍 Search Engine"]
-            CACHE["⚡ Cache Layer"]
-        end
-    end
-
-    subgraph "Data Layer"
-        DATABASE["🐘 {tech_stack.get('database', ['Database'])[0] if tech_stack.get('database') and len(tech_stack.get('database', [])) > 0 else 'Database'}"]
-        REDIS["⚡ {tech_stack.get('cache', ['Redis'])[0]}"]
-        FILES["☁️ File Storage"]
-    end
-
-    subgraph "External Services"
-        CDN["🌐 CDN"]
-        EMAIL["📧 Email Services"]
-        MONITORING["📈 Monitoring"]
-    end
-
-    WEB --> NGINX
-    MOBILE --> NGINX
-    API_CLIENTS --> NGINX
-    NGINX --> CORS
-    CORS --> RATE_LIMIT
-    RATE_LIMIT --> BACKEND
-    BACKEND --> API
-    API --> CONTENT
-    API --> MEDIA
-    API --> USER
-    API --> PUBLISH
-    API --> SEARCH
-    API --> CACHE
-    BACKEND --> DATABASE
-    BACKEND --> REDIS
-    BACKEND --> FILES
-    BACKEND --> CDN
-    BACKEND --> EMAIL
-    BACKEND --> MONITORING
-    end
-    """
-    
-    def _generate_api_first_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        """Generate API-first architecture diagram."""
-        return f"""graph TB
-    subgraph "Client Layer"
-        WEB["🌐 Web Applications"]
-        MOBILE["📱 Mobile Apps"]
-        API_CLIENTS["🔧 API Clients"]
-        THIRD_PARTY["🔌 Third-party Integrations"]
-    end
-
-    subgraph "API Gateway Layer"
-        GATEWAY["🔀 API Gateway"]
-        AUTH["🔐 Authentication"]
-        RATE_LIMIT["⚡ Rate Limiting"]
-        VERSIONING["📋 API Versioning"]
-    end
-
-    subgraph "Application Layer"
-        BACKEND["🐍 {tech_stack.get('backend', ['Backend'])[0] if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 0 else 'Backend'}"]
-        API["🔗 {tech_stack.get('backend', ['API'])[1] if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 1 else 'API Server'}"]
-        
-        subgraph "Core Services"
-            USER_SVC["👤 User Service"]
-            DATA_SVC["📊 Data Service"]
-            AUTH_SVC["🔐 Auth Service"]
-            WEBHOOK_SVC["🔔 Webhook Service"]
-        end
-    end
-
-    subgraph "Data Layer"
-        DATABASE["🐘 {tech_stack.get('database', ['Database'])[0] if tech_stack.get('database') and len(tech_stack.get('database', [])) > 0 else 'Database'}"]
-        REDIS["⚡ {tech_stack.get('cache', ['Redis'])[0]}"]
-        QUEUE["📋 Message Queue"]
-    end
-
-    WEB --> GATEWAY
-    MOBILE --> GATEWAY
-    API_CLIENTS --> GATEWAY
-    THIRD_PARTY --> GATEWAY
-    GATEWAY --> AUTH
-    AUTH --> RATE_LIMIT
-    RATE_LIMIT --> VERSIONING
-    VERSIONING --> BACKEND
-    BACKEND --> API
-    API --> USER_SVC
-    API --> DATA_SVC
-    API --> AUTH_SVC
-    API --> WEBHOOK_SVC
-    BACKEND --> DATABASE
-    BACKEND --> REDIS
-    BACKEND --> QUEUE
-    end
-    """
-    
-    def _generate_standard_web_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        """Generate standard web application architecture diagram."""
-        return f"""graph TB
-    subgraph "Client Layer"
-        WEB["🌐 Web Browser"]
-        MOBILE["📱 Mobile Browser"]
-    end
-
-    subgraph "Application Layer"
-        FRONTEND["⚛️ {tech_stack.get('frontend', ['Frontend'])[0] if tech_stack.get('frontend') and len(tech_stack.get('frontend', [])) > 0 else 'Frontend'}"]
-        BACKEND["🐍 {tech_stack.get('backend', ['Backend'])[0] if tech_stack.get('backend') and len(tech_stack.get('backend', [])) > 0 else 'Backend'}"]
-        API["🔗 API Layer"]
-    end
-
-    subgraph "Data Layer"
-        DATABASE["🐘 {tech_stack.get('database', ['Database'])[0] if tech_stack.get('database') and len(tech_stack.get('database', [])) > 0 else 'Database'}"]
-        CACHE["⚡ {tech_stack.get('cache', ['Cache'])[0] if tech_stack.get('cache') and len(tech_stack.get('cache', [])) > 0 else 'Cache'}"]
-        FILES["📁 File Storage"]
-    end
-
-    subgraph "External Services"
-        CDN["🌐 CDN"]
-        MONITORING["📈 Monitoring"]
-    end
-
-    WEB --> FRONTEND
-    MOBILE --> FRONTEND
-    FRONTEND --> BACKEND
-    BACKEND --> API
-    API --> DATABASE
-    API --> CACHE
-    BACKEND --> FILES
-    FRONTEND --> CDN
-    BACKEND --> MONITORING
-    end
-    """
-    
-    def _generate_mobile_application_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        return f"""graph TB
-    subgraph "Mobile Application Architecture - {repo_info.name}"
-        subgraph "Mobile Devices"
-            iOS["🍎 iOS App"]
-            ANDROID["🤖 Android App"]
-            CROSS["📱 Cross-Platform App"]
+            return f"""graph TB
+    subgraph "Web Application Architecture - {repo_info.name}"
+        subgraph "Client Layer"
+            Browser[Web Browser<br/>User Interface]
+            Mobile[Mobile Browser<br/>Responsive UI]
         end
         
-        subgraph "Backend Services"
-            API["🔗 Backend API"]
-            AUTH["🔐 Authentication"]
-            BUSINESS["⚙️ Business Logic"]
-        end
-        
-        subgraph "Data Services"
-            DATABASE["🐘 {tech_stack.get('database', ['Database'])[0] if tech_stack.get('database') and len(tech_stack.get('database', [])) > 0 else 'Database'}"]
-            CACHE["⚡ {tech_stack.get('cache', ['Cache'])[0] if tech_stack.get('cache') and len(tech_stack.get('cache', [])) > 0 else 'Cache'}"]
-            STORAGE["☁️ Cloud Storage"]
-        end
-        
-        subgraph "External Services"
-            PUSH["📱 Push Notifications"]
-            ANALYTICS["📊 Analytics"]
-            MAPS["🗺️ Maps API"]
-        end
-        
-        iOS --> API
-        ANDROID --> API
-        CROSS --> API
-        API --> AUTH
-        API --> BUSINESS
-        BUSINESS --> DATABASE
-        BUSINESS --> CACHE
-        BUSINESS --> STORAGE
-        API --> PUSH
-        API --> ANALYTICS
-        API --> MAPS
-    end"""
-    
-    def _generate_library_framework_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        return f"""graph TB
-    subgraph "Library/Framework Architecture - {repo_info.name}"
-        subgraph "Core Library"
-            CORE["🔧 Core Library"]
-            API["📋 Public API"]
-            UTILS["🛠️ Utilities"]
-        end
-        
-        subgraph "Extension Points"
-            PLUGINS["🔌 Plugin System"]
-            HOOKS["🪝 Hooks/Events"]
-            CONFIG["⚙️ Configuration"]
-        end
-        
-        subgraph "Integration Layer"
-            BINDINGS["🔗 Language Bindings"]
-            WRAPPERS["📦 Wrapper Libraries"]
-            TOOLS["🛠️ Development Tools"]
-        end
-        
-        subgraph "Documentation & Testing"
-            DOCS["📚 Documentation"]
-            TESTS["🧪 Test Suite"]
-            EXAMPLES["💡 Examples"]
-        end
-        
-        CORE --> API
-        CORE --> UTILS
-        API --> PLUGINS
-        API --> HOOKS
-        API --> CONFIG
-        API --> BINDINGS
-        BINDINGS --> WRAPPERS
-        API --> TOOLS
-        API --> DOCS
-        CORE --> TESTS
-        API --> EXAMPLES
-    end"""
-    
-    def _generate_data_ml_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        return f"""graph TB
-    subgraph "Data/ML Application Architecture - {repo_info.name}"
-        subgraph "Data Sources"
-            FILES["📁 Data Files"]
-            APIS["🔗 External APIs"]
-            STREAMS["🌊 Data Streams"]
-        end
-        
-        subgraph "Processing Layer"
-            ETL["🔄 ETL Pipeline"]
-            ML["🤖 ML Models"]
-            ANALYTICS["📊 Analytics Engine"]
-        end
-        
-        subgraph "Storage Layer"
-            DATABASE["🐘 {tech_stack.get('database', ['Database'])[0] if tech_stack.get('database') and len(tech_stack.get('database', [])) > 0 else 'Database'}"]
-            CACHE["⚡ {tech_stack.get('cache', ['Cache'])[0] if tech_stack.get('cache') and len(tech_stack.get('cache', [])) > 0 else 'Cache'}"]
-            WAREHOUSE["🏪 Data Warehouse"]
-        end
-        
-        subgraph "Output Layer"
-            API["🔗 API Layer"]
-            DASHBOARD["📊 Dashboard"]
-            REPORTS["📋 Reports"]
-        end
-        
-        FILES --> ETL
-        APIS --> ETL
-        STREAMS --> ETL
-        ETL --> ML
-        ETL --> ANALYTICS
-        ML --> DATABASE
-        ANALYTICS --> CACHE
-        DATABASE --> WAREHOUSE
-        DATABASE --> API
-        CACHE --> API
-        API --> DASHBOARD
-        API --> REPORTS
-    end"""
-    
-    def _generate_devops_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        return f"""graph TB
-    subgraph "DevOps/Infrastructure Architecture - {repo_info.name}"
-        subgraph "Source Control"
-            GIT["📚 Git Repository"]
-            CI["🔄 CI Pipeline"]
-            CD["🚀 CD Pipeline"]
-        end
-        
-        subgraph "Infrastructure"
-            CONTAINERS["🐳 Containers"]
-            ORCHESTRATION["⚙️ Orchestration"]
-            MONITORING["📊 Monitoring"]
-        end
-        
-        subgraph "Deployment"
-            STAGING["🧪 Staging Environment"]
-            PRODUCTION["🚀 Production Environment"]
-            ROLLBACK["↩️ Rollback System"]
-        end
-        
-        GIT --> CI
-        CI --> CD
-        CD --> CONTAINERS
-        CONTAINERS --> ORCHESTRATION
-        ORCHESTRATION --> STAGING
-        STAGING --> PRODUCTION
-        PRODUCTION --> ROLLBACK
-        ORCHESTRATION --> MONITORING
-    end"""
-    
-    def _generate_general_application_diagram(self, repo_info: RepositoryInfo, tech_stack: Dict[str, List[str]]) -> str:
-        return f"""graph TB
-    subgraph "Application Architecture - {repo_info.name}"
-        subgraph "Presentation Layer"
-            UI["🖥️ User Interface"]
-            API["🔗 API Layer"]
-        end
-        
-        subgraph "Business Layer"
-            LOGIC["⚙️ Business Logic"]
-            SERVICES["🔧 Services"]
-            VALIDATION["✅ Validation"]
+        subgraph "Application Layer"
+            Frontend[Frontend Application<br/>{repo_info.language or 'JavaScript'}]
+            Backend[Backend API<br/>Server Logic]
+            Auth[Authentication<br/>User Management]
         end
         
         subgraph "Data Layer"
-            DATABASE["🐘 {tech_stack.get('database', ['Database'])[0] if tech_stack.get('database') and len(tech_stack.get('database', [])) > 0 else 'Database'}"]
-            CACHE["⚡ {tech_stack.get('cache', ['Cache'])[0] if tech_stack.get('cache') and len(tech_stack.get('cache', [])) > 0 else 'Cache'}"]
-            FILES["📁 File System"]
+            Database[(Database<br/>Data Storage)]
+            Cache[(Cache<br/>Redis/Memcached)]
+            Files[File Storage<br/>Static Assets]
+        end
+        
+        subgraph "External Services"
+            CDN[CDN<br/>Content Delivery]
+            Analytics[Analytics<br/>Usage Tracking]
+            Monitoring[Monitoring<br/>Health Checks]
+        end
+        
+        Browser --> Frontend
+        Mobile --> Frontend
+        Frontend --> Backend
+        Backend --> Auth
+        Backend --> Database
+        Backend --> Cache
+        Frontend --> Files
+        Files --> CDN
+        Backend --> Analytics
+        Backend --> Monitoring
+        """
+        
+        elif arch_type == "mobile_application":
+            return f"""graph TB
+    subgraph "Mobile Application Architecture - {repo_info.name}"
+        subgraph "Mobile Devices"
+            iOS[iOS App<br/>Native/Swift]
+            Android[Android App<br/>Native/Kotlin]
+            CrossPlatform[Cross-Platform<br/>React Native/Flutter]
+        end
+        
+        subgraph "Backend Services"
+            API[API Gateway<br/>Request Routing]
+            Auth[Authentication<br/>OAuth/JWT]
+            Business[Business Logic<br/>Core Services]
+        end
+        
+        subgraph "Data Services"
+            Database[(Database<br/>User Data)]
+            Cache[(Cache<br/>Session Data)]
+            Storage[Cloud Storage<br/>Files/Media]
+        end
+        
+        subgraph "External Services"
+            Push[Push Notifications<br/>FCM/APNS]
+            Analytics[Analytics<br/>Usage Tracking]
+            Maps[Maps API<br/>Location Services]
+        end
+        
+        iOS --> API
+        Android --> API
+        CrossPlatform --> API
+        API --> Auth
+        API --> Business
+        Business --> Database
+        Business --> Cache
+        Business --> Storage
+        API --> Push
+        API --> Analytics
+        API --> Maps
+        end"""
+        
+        elif arch_type == "library_framework":
+            return f"""graph TB
+    subgraph "Library/Framework Architecture - {repo_info.name}"
+        subgraph "Core Library"
+            Core[Core Library<br/>{repo_info.language or 'Main Language'}]
+            API[Public API<br/>Exposed Interface]
+            Utils[Utilities<br/>Helper Functions]
+        end
+        
+        subgraph "Extension Points"
+            Plugins[Plugin System<br/>Extensibility]
+            Hooks[Hooks/Events<br/>Customization]
+            Config[Configuration<br/>Settings Management]
+        end
+        
+        subgraph "Integration Layer"
+            Bindings[Language Bindings<br/>Multi-language Support]
+            Wrappers[Wrapper Libraries<br/>Higher-level APIs]
+            Tools[Development Tools<br/>CLI/Debugging]
+        end
+        
+        subgraph "Documentation & Testing"
+            Docs[Documentation<br/>API Reference]
+            Tests[Test Suite<br/>Unit/Integration]
+            Examples[Examples<br/>Usage Patterns]
+        end
+        
+        Core --> API
+        Core --> Utils
+        API --> Plugins
+        API --> Hooks
+        API --> Config
+        API --> Bindings
+        Bindings --> Wrappers
+        API --> Tools
+        API --> Docs
+        Core --> Tests
+        API --> Examples
+        end"""
+        
+        else:  # general_application or other
+            return f"""graph TB
+    subgraph "Application Architecture - {repo_info.name}"
+        subgraph "Presentation Layer"
+            UI[User Interface<br/>{repo_info.language or 'Frontend'}]
+            API[API Layer<br/>External Interface]
+        end
+        
+        subgraph "Business Layer"
+            Logic[Business Logic<br/>Core Functionality]
+            Services[Services<br/>Domain Logic]
+            Validation[Validation<br/>Data Integrity]
+        end
+        
+        subgraph "Data Layer"
+            Database[(Database<br/>Persistent Storage)]
+            Cache[(Cache<br/>Temporary Storage)]
+            Files[File System<br/>Data Files]
         end
         
         subgraph "Infrastructure"
-            MONITORING["📊 Monitoring"]
-            LOGGING["📝 Logging"]
-            SECURITY["🔒 Security"]
+            Monitoring[Monitoring<br/>Health & Metrics]
+            Logging[Logging<br/>Audit Trail]
+            Security[Security<br/>Access Control]
         end
         
         UI --> API
-        API --> LOGIC
-        LOGIC --> SERVICES
-        SERVICES --> VALIDATION
-        SERVICES --> DATABASE
-        SERVICES --> CACHE
-        SERVICES --> FILES
-        LOGIC --> MONITORING
-        LOGIC --> LOGGING
-        API --> SECURITY
-    end"""
+        API --> Logic
+        Logic --> Services
+        Services --> Validation
+        Services --> Database
+        Services --> Cache
+        Services --> Files
+        Logic --> Monitoring
+        Logic --> Logging
+        API --> Security
+        end"""
     
-    def _generate_detailed_api_flow_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
-        """Generate detailed API flow diagram based on architecture type."""
+    def _generate_api_flow_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
+        """Generate API flow diagram based on architecture type."""
         
         if arch_type in ["web_application", "backend_service"]:
             return """sequenceDiagram
@@ -1296,8 +799,8 @@ class EnhancedClaudeAnalyzer:
     Service->>App: Processed Result
     App->>User: Display Result"""
     
-    def _generate_detailed_data_flow_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
-        """Generate detailed data flow diagram based on architecture type."""
+    def _generate_data_flow_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
+        """Generate data flow diagram based on architecture type."""
         
         return f"""graph TD
     subgraph "Data Flow - {repo_info.name}"
@@ -1337,10 +840,10 @@ class EnhancedClaudeAnalyzer:
         Cache --> API
         PrimaryDB --> Reports
         PrimaryDB --> Notifications
-    end"""
+        end"""
     
-    def _generate_detailed_component_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
-        """Generate detailed component diagram based on architecture type."""
+    def _generate_component_diagram(self, repo_info: RepositoryInfo, arch_type: str) -> str:
+        """Generate component diagram based on architecture type."""
         
         return f"""graph TB
     subgraph "Component Architecture - {repo_info.name}"
@@ -1379,10 +882,10 @@ class EnhancedClaudeAnalyzer:
         Services --> Config
         Services --> Logging
         Services --> Monitoring
-    end"""
+        end"""
     
-    def _generate_detailed_api_analysis(self, repo_info: RepositoryInfo, arch_type: str) -> APIAnalysis:
-        """Generate detailed API analysis based on repository characteristics."""
+    def _generate_api_analysis(self, repo_info: RepositoryInfo, arch_type: str) -> APIAnalysis:
+        """Generate API analysis based on repository characteristics."""
         
         # Generate endpoints based on architecture type
         if arch_type == "web_application":
@@ -1438,8 +941,8 @@ class EnhancedClaudeAnalyzer:
             database_schemas=["Primary data models", "User data", "Application state"]
         )
     
-    def _generate_detailed_technical_deep_dive(self, repo_info: RepositoryInfo, arch_type: str) -> TechnicalDeepDive:
-        """Generate detailed technical deep dive based on repository characteristics."""
+    def _generate_technical_deep_dive(self, repo_info: RepositoryInfo, arch_type: str) -> TechnicalDeepDive:
+        """Generate technical deep dive based on repository characteristics."""
         
         # Build technology stack based on language and topics
         tech_stack = {}
@@ -1484,8 +987,8 @@ class EnhancedClaudeAnalyzer:
             ]
         )
     
-    def _generate_detailed_comprehensive_report(self, repo_info: RepositoryInfo, arch_type: str) -> str:
-        """Generate detailed comprehensive technical report."""
+    def _generate_comprehensive_report(self, repo_info: RepositoryInfo, arch_type: str) -> str:
+        """Generate comprehensive technical report."""
         
         return f"""# Technical Architecture Report: {repo_info.full_name}
 

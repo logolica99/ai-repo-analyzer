@@ -1,0 +1,255 @@
+{
+  "repository": {
+    "fullName": "mastodon/mastodon",
+    "description": "Your self-hosted, globally interconnected microblogging community",
+    "language": "Ruby",
+    "stars": 48976,
+    "forks": 7299,
+    "topics": [
+      "mastodon",
+      "docker",
+      "microblog",
+      "activity-stream",
+      "webfinger",
+      "social-network",
+      "activitypub",
+      "fediverse",
+      "social-web"
+    ],
+    "license": "GNU Affero General Public License v3.0",
+    "createdAt": "2016-02-22T15:01:25+00:00",
+    "updatedAt": "2025-09-09T20:38:32+00:00"
+  },
+  "analysis": {
+    "date": "2025-09-09T16:01:30.327292",
+    "focusArea": null,
+    "techStack": [],
+    "keyFeatures": [],
+    "targetUsers": []
+  },
+  "userStories": [],
+  "systemArchitecture": {
+    "systemDiagram": "graph TB\n    subgraph \"Mastodon Fediverse Architecture\"\n        subgraph \"Client Applications\"\n            WebUI[Web Interface<br/>Rails Views + React]\n            MobileApp[Mobile Apps<br/>iOS/Android]\n            ThirdParty[Third-party Clients<br/>API Consumers]\n        end\n        \n        subgraph \"Mastodon Server Instance\"\n            LoadBalancer[Load Balancer<br/>Nginx/HAProxy]\n            AppServer[Rails Application<br/>Ruby on Rails]\n            Sidekiq[Background Jobs<br/>Sidekiq Workers]\n            Redis[Redis Cache<br/>Sessions + Jobs]\n        end\n        \n        subgraph \"Data Layer\"\n            PostgreSQL[(PostgreSQL<br/>Primary Database)]\n            S3Storage[S3 Storage<br/>Media Files]\n            Elasticsearch[Elasticsearch<br/>Full-text Search]\n        end\n        \n        subgraph \"Federation Layer\"\n            ActivityPub[ActivityPub Protocol<br/>Federation]\n            WebFinger[WebFinger<br/>User Discovery]\n            NodeInfo[NodeInfo<br/>Instance Metadata]\n        end\n        \n        subgraph \"External Services\"\n            OtherInstances[Other Mastodon Instances<br/>Federation Partners]\n            MediaCDN[CDN<br/>Media Delivery]\n            Monitoring[Monitoring<br/>Stats + Health]\n        end\n        \n        WebUI --> LoadBalancer\n        MobileApp --> LoadBalancer\n        ThirdParty --> LoadBalancer\n        LoadBalancer --> AppServer\n        AppServer --> Sidekiq\n        AppServer --> Redis\n        AppServer --> PostgreSQL\n        AppServer --> S3Storage\n        AppServer --> Elasticsearch\n        AppServer --> ActivityPub\n        ActivityPub --> OtherInstances\n        WebFinger --> OtherInstances\n        NodeInfo --> OtherInstances\n        S3Storage --> MediaCDN\n        AppServer --> Monitoring",
+    "apiFlowDiagram": "sequenceDiagram\n    participant User as User\n    participant WebUI as Web UI\n    participant API as Rails API\n    participant Sidekiq as Background Jobs\n    participant DB as PostgreSQL\n    participant Fed as Federation\n    \n    User->>WebUI: Create Post\n    WebUI->>API: POST /api/v1/statuses\n    API->>DB: Save Status\n    API->>Sidekiq: Queue Distribution Job\n    API->>WebUI: Return Status JSON\n    WebUI->>User: Show Posted Status\n    \n    Sidekiq->>Fed: Distribute via ActivityPub\n    Fed->>Fed: Deliver to Followers\n    Fed->>API: Inbox Notifications\n    API->>DB: Store Incoming Activities",
+    "dataFlowDiagram": "graph TD\n    subgraph \"User Input Processing\"\n        UserInput[User Posts/Interactions]\n        Validation[Input Validation<br/>Content Filtering]\n        Processing[Content Processing<br/>Mentions/Hashtags]\n    end\n    \n    subgraph \"Data Storage\"\n        StatusStorage[Status Storage<br/>PostgreSQL]\n        MediaStorage[Media Storage<br/>S3/File System]\n        CacheLayer[Cache Layer<br/>Redis]\n    end\n    \n    subgraph \"Federation Processing\"\n        Outbox[Outbox Processing<br/>ActivityPub]\n        Inbox[Inbox Processing<br/>Federation]\n        Delivery[Delivery Queue<br/>Sidekiq]\n    end\n    \n    subgraph \"Search & Discovery\"\n        Indexing[Search Indexing<br/>Elasticsearch]\n        WebFinger[WebFinger Lookup<br/>User Discovery]\n        NodeInfo[NodeInfo<br/>Instance Discovery]\n    end\n    \n    UserInput --> Validation\n    Validation --> Processing\n    Processing --> StatusStorage\n    Processing --> MediaStorage\n    Processing --> CacheLayer\n    Processing --> Outbox\n    Outbox --> Delivery\n    Delivery --> Federation\n    Inbox --> Processing\n    StatusStorage --> Indexing\n    WebFinger --> UserInput",
+    "componentDiagram": "graph TB\n    subgraph \"Mastodon Rails Application\"\n        subgraph \"Controllers\"\n            APIController[API Controllers<br/>REST Endpoints]\n            WebController[Web Controllers<br/>UI Rendering]\n            FederationController[Federation Controllers<br/>ActivityPub]\n        end\n        \n        subgraph \"Models\"\n            Account[Account Model<br/>User Management]\n            Status[Status Model<br/>Posts/Toots]\n            Media[Media Model<br/>Attachments]\n            Notification[Notification Model<br/>Alerts]\n        end\n        \n        subgraph \"Services\"\n            ActivityPubService[ActivityPub Service<br/>Federation Logic]\n            SearchService[Search Service<br/>Elasticsearch]\n            MediaService[Media Service<br/>File Processing]\n            NotificationService[Notification Service<br/>Real-time Alerts]\n        end\n        \n        subgraph \"Workers\"\n            DistributionWorker[Distribution Worker<br/>Federation Delivery]\n            MediaWorker[Media Worker<br/>Image Processing]\n            SearchWorker[Search Worker<br/>Indexing]\n            NotificationWorker[Notification Worker<br/>Push Notifications]\n        end\n        \n        subgraph \"Jobs\"\n            SidekiqJobs[Sidekiq Jobs<br/>Background Processing]\n            ScheduledJobs[Scheduled Jobs<br/>Cron Tasks]\n        end\n    end\n    \n    APIController --> Account\n    APIController --> Status\n    WebController --> Account\n    WebController --> Status\n    FederationController --> ActivityPubService\n    ActivityPubService --> DistributionWorker\n    Status --> Media\n    Status --> Notification\n    Media --> MediaService\n    MediaService --> MediaWorker\n    Notification --> NotificationService\n    NotificationService --> NotificationWorker\n    SearchService --> SearchWorker\n    DistributionWorker --> SidekiqJobs\n    MediaWorker --> SidekiqJobs\n    SearchWorker --> SidekiqJobs\n    NotificationWorker --> SidekiqJobs",
+    "deploymentDiagram": null
+  },
+  "apiAnalysis": {
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/v1/accounts/verify_credentials",
+        "description": "Verify account credentials"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/accounts/:id",
+        "description": "Get account information"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/statuses",
+        "description": "Create a new status/post"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/statuses/:id",
+        "description": "Get status details"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/statuses/:id/favourite",
+        "description": "Favourite a status"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/statuses/:id/reblog",
+        "description": "Boost/reblog a status"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/timelines/home",
+        "description": "Get home timeline"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/timelines/public",
+        "description": "Get public timeline"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/notifications",
+        "description": "Get notifications"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/follows",
+        "description": "Follow an account"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/search",
+        "description": "Search accounts and statuses"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/trends",
+        "description": "Get trending hashtags"
+      },
+      {
+        "method": "WebSocket",
+        "path": "/api/v1/streaming",
+        "description": "Real-time streaming API"
+      }
+    ],
+    "externalServices": [
+      "PostgreSQL - Primary database for all data storage",
+      "Redis - Caching, sessions, and background job queues",
+      "Elasticsearch - Full-text search and indexing",
+      "S3/File Storage - Media file storage and CDN",
+      "ActivityPub Protocol - Federation with other instances",
+      "WebFinger - User discovery across instances",
+      "NodeInfo - Instance metadata and capabilities",
+      "SMTP Server - Email notifications and verification",
+      "CDN Services - Media delivery and caching"
+    ],
+    "authenticationMethods": [
+      "OAuth 2.0 - API authentication for third-party apps",
+      "Session-based - Web interface authentication",
+      "JWT Tokens - API access tokens",
+      "Application tokens - For server-to-server communication",
+      "WebFinger - Cross-instance user verification"
+    ],
+    "dataFormats": [
+      "JSON - Primary API data format",
+      "ActivityPub JSON-LD - Federation protocol",
+      "WebFinger JSON - User discovery",
+      "NodeInfo JSON - Instance metadata",
+      "RSS/Atom - Feed formats",
+      "WebSocket - Real-time streaming"
+    ],
+    "websocketEvents": [
+      "user - User-specific notifications",
+      "public - Public timeline updates",
+      "local - Local timeline updates",
+      "hashtag - Hashtag timeline updates",
+      "list - List timeline updates",
+      "direct - Direct message updates"
+    ],
+    "databaseSchemas": [
+      "accounts - User account information",
+      "statuses - Posts and statuses",
+      "media_attachments - File attachments",
+      "notifications - User notifications",
+      "follows - Following relationships",
+      "blocks - Blocking relationships",
+      "mutes - Muting relationships",
+      "favourites - Favourite statuses",
+      "reblogs - Boosted statuses",
+      "mentions - Status mentions",
+      "hashtags - Hashtag tracking"
+    ]
+  },
+  "technicalDeepDive": {
+    "technologyStack": {
+      "backend": [
+        "Ruby 3.0+",
+        "Rails 7.0+",
+        "PostgreSQL 13+",
+        "Redis 6+",
+        "Elasticsearch 7+"
+      ],
+      "frontend": [
+        "React",
+        "TypeScript",
+        "Redux",
+        "SCSS",
+        "Webpack"
+      ],
+      "infrastructure": [
+        "Docker",
+        "Nginx",
+        "Sidekiq",
+        "Puma",
+        "HAProxy"
+      ],
+      "monitoring": [
+        "Prometheus",
+        "Grafana",
+        "Sentry",
+        "Lograge"
+      ],
+      "deployment": [
+        "Docker Compose",
+        "Kubernetes",
+        "Capistrano",
+        "Ansible"
+      ]
+    },
+    "buildSystem": {
+      "type": "Rails + Webpack + Docker",
+      "package_manager": "Bundler + Yarn",
+      "asset_pipeline": "Webpack + Sprockets",
+      "containerization": "Docker + Docker Compose",
+      "environment": "Development, Staging, Production"
+    },
+    "testingFramework": {
+      "unit_tests": "RSpec for Ruby code",
+      "integration_tests": "Rails system tests",
+      "api_tests": "RSpec API testing",
+      "frontend_tests": "Jest + React Testing Library",
+      "e2e_tests": "Capybara + Selenium",
+      "performance_tests": "Custom load testing"
+    },
+    "ciCdPipeline": {
+      "platform": "GitHub Actions",
+      "stages": [
+        "Lint",
+        "Security Scan",
+        "Unit Tests",
+        "Integration Tests",
+        "Build",
+        "Deploy"
+      ],
+      "deployment": "Docker-based deployment",
+      "monitoring": "Health checks and metrics collection"
+    },
+    "deploymentStrategy": {
+      "containerization": "Docker containers",
+      "orchestration": "Docker Compose or Kubernetes",
+      "database": "PostgreSQL with read replicas",
+      "caching": "Redis cluster for high availability",
+      "storage": "S3-compatible storage for media",
+      "cdn": "CDN for media delivery",
+      "load_balancing": "Nginx or HAProxy"
+    },
+    "performanceOptimizations": [
+      "Database query optimization with proper indexing",
+      "Redis caching for frequently accessed data",
+      "Elasticsearch for fast full-text search",
+      "CDN for media file delivery",
+      "Database connection pooling",
+      "Background job processing with Sidekiq",
+      "Image optimization and resizing",
+      "API response caching",
+      "Database read replicas for scaling",
+      "Connection pooling and keep-alive"
+    ],
+    "securityFeatures": [
+      "Content Security Policy (CSP) headers",
+      "Rate limiting on API endpoints",
+      "Input validation and sanitization",
+      "SQL injection prevention",
+      "XSS protection",
+      "CSRF protection",
+      "Secure headers (HSTS, X-Frame-Options)",
+      "ActivityPub signature verification",
+      "Media file type validation",
+      "User content moderation tools",
+      "Instance-level blocking and filtering",
+      "Two-factor authentication support"
+    ]
+  },
+  "comprehensiveReport": "# Technical Architecture Report: Mastodon\n\n## Executive Summary\n\nMastodon is a sophisticated, open-source microblogging platform that implements the ActivityPub protocol for federated social networking. Built on Ruby on Rails, it provides a Twitter-like experience while maintaining user privacy and enabling decentralized social networking through federation with other instances.\n\n## System Architecture Overview\n\n### Core Architecture Principles\n- **Federated Design**: Decentralized network of independent instances\n- **ActivityPub Protocol**: Standard for social networking federation\n- **Rails MVC**: Clean separation of concerns with Ruby on Rails\n- **Background Processing**: Asynchronous job processing with Sidekiq\n- **Real-time Updates**: WebSocket streaming for live updates\n\n### Key Technical Decisions\n\n1. **Federation Architecture**: ActivityPub protocol for cross-instance communication\n2. **Database Design**: PostgreSQL with optimized indexes for social media data\n3. **Caching Strategy**: Redis for sessions, background jobs, and frequently accessed data\n4. **Search Implementation**: Elasticsearch for full-text search capabilities\n5. **Media Handling**: S3-compatible storage with CDN integration\n\n## Federation & ActivityPub\n\n### ActivityPub Implementation\n- **Inbox/Outbox Pattern**: Standard ActivityPub message handling\n- **WebFinger Integration**: User discovery across instances\n- **NodeInfo Protocol**: Instance capability discovery\n- **Signature Verification**: Cryptographic message verification\n- **Delivery Queues**: Reliable message delivery with retry logic\n\n### Federation Benefits\n- **Decentralization**: No single point of control\n- **Privacy**: Data stays on user's chosen instance\n- **Resilience**: Network continues if individual instances fail\n- **Choice**: Users can choose instances that match their values\n\n## Performance & Scalability\n\n### Database Optimization\n- **Connection Pooling**: Efficient database connection management\n- **Read Replicas**: Scaling read operations\n- **Indexing Strategy**: Optimized indexes for social media queries\n- **Query Optimization**: N+1 query prevention and efficient joins\n\n### Caching Strategy\n- **Redis Caching**: Session data and frequently accessed content\n- **Application Caching**: Rails fragment caching\n- **CDN Integration**: Media file delivery optimization\n- **Elasticsearch**: Fast full-text search with proper indexing\n\n### Background Processing\n- **Sidekiq Workers**: Asynchronous job processing\n- **Job Queues**: Priority-based job processing\n- **Retry Logic**: Reliable message delivery\n- **Monitoring**: Job queue monitoring and alerting\n\n## Security Architecture\n\n### Data Protection\n- **Content Moderation**: Instance-level content filtering\n- **User Blocking**: Granular blocking and muting capabilities\n- **Privacy Controls**: User-controlled visibility settings\n- **Data Retention**: Configurable data retention policies\n\n### Federation Security\n- **Signature Verification**: Cryptographic message verification\n- **Instance Blocking**: Block entire instances if needed\n- **Content Filtering**: Keyword and domain-based filtering\n- **Rate Limiting**: API endpoint protection\n\n## Development & Deployment\n\n### Development Workflow\n- **Rails Conventions**: Following Rails best practices\n- **Testing Strategy**: Comprehensive test coverage\n- **Code Quality**: Linting and static analysis\n- **Documentation**: API documentation and guides\n\n### Deployment Options\n- **Docker**: Containerized deployment\n- **Docker Compose**: Local development and small instances\n- **Kubernetes**: Production-scale orchestration\n- **Traditional**: Capistrano-based deployment\n\n## Monitoring & Observability\n\n### Application Monitoring\n- **Error Tracking**: Sentry integration for error monitoring\n- **Performance Metrics**: Application performance monitoring\n- **Health Checks**: Instance health monitoring\n- **Logging**: Structured logging with Lograge\n\n### Infrastructure Monitoring\n- **Database Monitoring**: PostgreSQL performance metrics\n- **Cache Monitoring**: Redis performance and memory usage\n- **Search Monitoring**: Elasticsearch cluster health\n- **System Metrics**: Server resource utilization\n\n## Recommendations\n\n### Strengths\n- **Federation Architecture**: Excellent implementation of ActivityPub\n- **Privacy Focus**: Strong user privacy controls\n- **Community Driven**: Active open-source community\n- **Extensible**: Plugin and customization support\n- **Performance**: Well-optimized for social media workloads\n\n### Areas for Enhancement\n- **Mobile Experience**: Native mobile app improvements\n- **Search Capabilities**: Enhanced search features\n- **Analytics**: Better instance analytics and insights\n- **Accessibility**: Improved accessibility features\n- **Documentation**: More comprehensive API documentation\n\nThis architecture represents a mature, production-ready federated social networking platform with excellent technical foundations for privacy-focused, decentralized social media.\n"
+}

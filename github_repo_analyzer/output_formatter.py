@@ -8,6 +8,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from .types import AnalysisResult, OutputFormat, TestDocumentation
+from .mermaid_validator import MermaidValidator
 
 
 class OutputFormatter:
@@ -15,6 +16,7 @@ class OutputFormatter:
     
     def __init__(self, output_format: OutputFormat = OutputFormat.TEXT):
         self.output_format = output_format
+        self.mermaid_validator = MermaidValidator()
     
     def format_analysis_result(self, result: AnalysisResult) -> str:
         """Format the analysis result according to the specified output format."""
@@ -101,74 +103,74 @@ class OutputFormatter:
         """Format the result as JSON."""
         output_data = {
             "repository": {
-                "full_name": result.repository.full_name,
+                "fullName": result.repository.full_name,
                 "description": result.repository.description,
                 "language": result.repository.language,
                 "stars": result.repository.stars,
                 "forks": result.repository.forks,
                 "topics": result.repository.topics,
                 "license": result.repository.license,
-                "created_at": result.repository.created_at.isoformat(),
-                "updated_at": result.repository.updated_at.isoformat()
+                "createdAt": result.repository.created_at.isoformat(),
+                "updatedAt": result.repository.updated_at.isoformat()
             },
             "analysis": {
                 "date": result.analysis_date.isoformat(),
-                "focus_area": result.focus_area,
-                "tech_stack": result.tech_stack,
-                "key_features": result.key_features,
-                "target_users": result.target_users
+                "focusArea": result.focus_area,
+                "techStack": result.tech_stack,
+                "keyFeatures": result.key_features,
+                "targetUsers": result.target_users
             },
-            "user_stories": []
+            "userStories": []
         }
         
         # Add comprehensive analysis data if available
         if result.system_architecture:
-            output_data["system_architecture"] = {
-                "system_diagram": result.system_architecture.system_diagram,
-                "api_flow_diagram": result.system_architecture.api_flow_diagram,
-                "data_flow_diagram": result.system_architecture.data_flow_diagram,
-                "component_diagram": result.system_architecture.component_diagram,
-                "deployment_diagram": result.system_architecture.deployment_diagram
+            output_data["systemArchitecture"] = {
+                "systemDiagram": result.system_architecture.system_diagram,
+                "apiFlowDiagram": result.system_architecture.api_flow_diagram,
+                "dataFlowDiagram": result.system_architecture.data_flow_diagram,
+                "componentDiagram": result.system_architecture.component_diagram,
+                "deploymentDiagram": result.system_architecture.deployment_diagram
             }
         
         if result.api_analysis:
-            output_data["api_analysis"] = {
+            output_data["apiAnalysis"] = {
                 "endpoints": result.api_analysis.endpoints,
-                "external_services": result.api_analysis.external_services,
-                "authentication_methods": result.api_analysis.authentication_methods,
-                "data_formats": result.api_analysis.data_formats,
-                "websocket_events": result.api_analysis.websocket_events,
-                "database_schemas": result.api_analysis.database_schemas
+                "externalServices": result.api_analysis.external_services,
+                "authenticationMethods": result.api_analysis.authentication_methods,
+                "dataFormats": result.api_analysis.data_formats,
+                "websocketEvents": result.api_analysis.websocket_events,
+                "databaseSchemas": result.api_analysis.database_schemas
             }
         
         if result.technical_deep_dive:
-            output_data["technical_deep_dive"] = {
-                "technology_stack": result.technical_deep_dive.technology_stack,
-                "build_system": result.technical_deep_dive.build_system,
-                "testing_framework": result.technical_deep_dive.testing_framework,
-                "ci_cd_pipeline": result.technical_deep_dive.ci_cd_pipeline,
-                "deployment_strategy": result.technical_deep_dive.deployment_strategy,
-                "performance_optimizations": result.technical_deep_dive.performance_optimizations,
-                "security_features": result.technical_deep_dive.security_features
+            output_data["technicalDeepDive"] = {
+                "technologyStack": result.technical_deep_dive.technology_stack,
+                "buildSystem": result.technical_deep_dive.build_system,
+                "testingFramework": result.technical_deep_dive.testing_framework,
+                "ciCdPipeline": result.technical_deep_dive.ci_cd_pipeline,
+                "deploymentStrategy": result.technical_deep_dive.deployment_strategy,
+                "performanceOptimizations": result.technical_deep_dive.performance_optimizations,
+                "securityFeatures": result.technical_deep_dive.security_features
             }
         
         if result.comprehensive_report:
-            output_data["comprehensive_report"] = result.comprehensive_report
+            output_data["comprehensiveReport"] = result.comprehensive_report
         
         for story in result.user_stories:
             story_data = {
                 "id": story.id,
                 "title": story.title,
                 "description": story.description,
-                "acceptance_criteria": [
+                "acceptanceCriteria": [
                     criterion.description for criterion in story.acceptance_criteria
                 ],
                 "priority": story.priority.value,
                 "effort": story.effort.value,
                 "tags": story.tags,
-                "created_at": story.created_at.isoformat()
+                "createdAt": story.created_at.isoformat()
             }
-            output_data["user_stories"].append(story_data)
+            output_data["userStories"].append(story_data)
         
         return json.dumps(output_data, indent=2, ensure_ascii=False)
     
@@ -216,7 +218,9 @@ class OutputFormatter:
                 lines.append("### Overall System Architecture")
                 lines.append("")
                 lines.append("```mermaid")
-                lines.append(result.system_architecture.system_diagram)
+                # Validate and fix the diagram before output
+                validated_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(result.system_architecture.system_diagram)
+                lines.append(validated_diagram)
                 lines.append("```")
                 lines.append("")
             
@@ -224,7 +228,9 @@ class OutputFormatter:
                 lines.append("### API Flow Diagram")
                 lines.append("")
                 lines.append("```mermaid")
-                lines.append(result.system_architecture.api_flow_diagram)
+                # Validate and fix the diagram before output
+                validated_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(result.system_architecture.api_flow_diagram)
+                lines.append(validated_diagram)
                 lines.append("```")
                 lines.append("")
             
@@ -232,7 +238,9 @@ class OutputFormatter:
                 lines.append("### Component Architecture")
                 lines.append("")
                 lines.append("```mermaid")
-                lines.append(result.system_architecture.component_diagram)
+                # Validate and fix the diagram before output
+                validated_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(result.system_architecture.component_diagram)
+                lines.append(validated_diagram)
                 lines.append("```")
                 lines.append("")
             
@@ -240,7 +248,9 @@ class OutputFormatter:
                 lines.append("### Data Flow Architecture")
                 lines.append("")
                 lines.append("```mermaid")
-                lines.append(result.system_architecture.data_flow_diagram)
+                # Validate and fix the diagram before output
+                validated_diagram, _ = self.mermaid_validator.validate_and_fix_diagram(result.system_architecture.data_flow_diagram)
+                lines.append(validated_diagram)
                 lines.append("```")
                 lines.append("")
         
@@ -652,15 +662,15 @@ class OutputFormatter:
         
         # Convert to dictionary
         test_data = {
-            "repository_name": test_doc.repository_name,
-            "analysis_date": test_doc.analysis_date.isoformat(),
-            "total_test_cases": test_doc.total_test_cases,
-            "test_suites": [],
-            "test_coverage": test_doc.test_coverage,
-            "testing_strategy": test_doc.testing_strategy,
-            "test_environment_requirements": test_doc.test_environment_requirements,
-            "execution_instructions": test_doc.execution_instructions,
-            "maintenance_notes": test_doc.maintenance_notes,
+            "repositoryName": test_doc.repository_name,
+            "analysisDate": test_doc.analysis_date.isoformat(),
+            "totalTestCases": test_doc.total_test_cases,
+            "testSuites": [],
+            "testCoverage": test_doc.test_coverage,
+            "testingStrategy": test_doc.testing_strategy,
+            "testEnvironmentRequirements": test_doc.test_environment_requirements,
+            "executionInstructions": test_doc.execution_instructions,
+            "maintenanceNotes": test_doc.maintenance_notes,
             "metadata": test_doc.metadata
         }
         
@@ -670,11 +680,11 @@ class OutputFormatter:
                 "id": suite.id,
                 "name": suite.name,
                 "description": suite.description,
-                "test_type": suite.test_type.value,
-                "user_story_ids": suite.user_story_ids,
-                "total_tests": suite.total_tests,
-                "created_at": suite.created_at.isoformat(),
-                "test_cases": []
+                "testType": suite.test_type.value,
+                "userStoryIds": suite.user_story_ids,
+                "totalTests": suite.total_tests,
+                "createdAt": suite.created_at.isoformat(),
+                "testCases": []
             }
             
             # Convert test cases
@@ -683,20 +693,20 @@ class OutputFormatter:
                     "id": test_case.id,
                     "title": test_case.title,
                     "description": test_case.description,
-                    "test_type": test_case.test_type.value,
+                    "testType": test_case.test_type.value,
                     "priority": test_case.priority.value,
-                    "user_story_id": test_case.user_story_id,
-                    "user_story_title": test_case.user_story_title,
-                    "test_steps": test_case.test_steps,
-                    "expected_results": test_case.expected_results,
+                    "userStoryId": test_case.user_story_id,
+                    "userStoryTitle": test_case.user_story_title,
+                    "testSteps": test_case.test_steps,
+                    "expectedResults": test_case.expected_results,
                     "prerequisites": test_case.prerequisites,
-                    "test_data": test_case.test_data,
+                    "testData": test_case.test_data,
                     "tags": test_case.tags,
-                    "created_at": test_case.created_at.isoformat()
+                    "createdAt": test_case.created_at.isoformat()
                 }
-                suite_data["test_cases"].append(test_case_data)
+                suite_data["testCases"].append(test_case_data)
             
-            test_data["test_suites"].append(suite_data)
+            test_data["testSuites"].append(suite_data)
         
         return json.dumps(test_data, indent=2, ensure_ascii=False)
     

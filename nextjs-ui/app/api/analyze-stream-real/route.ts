@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       args = ['analyze', repo, '--format', 'json', '--max-stories', '3']
       break
     case 'comprehensive':
-      args = ['analyze', repo, '--comprehensive', '--format', 'json', '--max-stories', '3']
+      args = ['architecture', repo,  '--format', 'json']
       break
     case 'architecture':
       args = ['architecture', repo, '--format', 'json']
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (focus) {
-    args.push('--focus', focus)
+    // args.push('--focus', focus)
   }
 
   // Add token if available

@@ -153,12 +153,51 @@ export default function ReportViewer({ result }: ReportViewerProps) {
           <div className="bg-white border rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">API Endpoints</h3>
             <div className="space-y-2">
-              {result.apiAnalysis.endpoints.map((endpoint, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-                  <Code className="h-4 w-4 text-blue-600" />
-                  <code className="text-sm font-mono text-gray-900">{endpoint}</code>
-                </div>
-              ))}
+              {result.apiAnalysis.endpoints.map((endpoint: any, index: number) => {
+                // Handle both string and object formats
+                if (typeof endpoint === 'string') {
+                  // Parse string format like "POST /graphql/ - GraphQL endpoint"
+                  const parts = endpoint.split(' - ');
+                  const methodPath = parts[0];
+                  const description = parts[1] || '';
+                  const methodMatch = methodPath.match(/^(\w+)\s+(.+)$/);
+                  const method = methodMatch ? methodMatch[1] : 'GET';
+                  const path = methodMatch ? methodMatch[2] : methodPath;
+                  
+                  return (
+                    <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
+                      <Code className="h-4 w-4 text-blue-600" />
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
+                            {method}
+                          </span>
+                          <code className="text-sm font-mono text-gray-900">{path}</code>
+                        </div>
+                        {description && (
+                          <p className="text-sm text-gray-600 mt-1">{description}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Handle object format with method, path, description
+                  return (
+                    <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
+                      <Code className="h-4 w-4 text-blue-600" />
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
+                            {endpoint.method}
+                          </span>
+                          <code className="text-sm font-mono text-gray-900">{endpoint.path}</code>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{endpoint.description}</p>
+                      </div>
+                    </div>
+                  );
+                }
+              })}
             </div>
           </div>
 

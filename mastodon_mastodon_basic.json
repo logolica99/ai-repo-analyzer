@@ -1,0 +1,31 @@
+{
+  "repository": {
+    "fullName": "mastodon/mastodon",
+    "description": "Your self-hosted, globally interconnected microblogging community",
+    "language": "Ruby",
+    "stars": 48976,
+    "forks": 7299,
+    "topics": [
+      "mastodon",
+      "docker",
+      "microblog",
+      "activity-stream",
+      "webfinger",
+      "social-network",
+      "activitypub",
+      "fediverse",
+      "social-web"
+    ],
+    "license": "GNU Affero General Public License v3.0",
+    "createdAt": "2016-02-22T15:01:25+00:00",
+    "updatedAt": "2025-09-09T20:38:32+00:00"
+  },
+  "analysis": {
+    "date": "2025-09-09T15:49:14.019042",
+    "focusArea": null,
+    "techStack": [],
+    "keyFeatures": [],
+    "targetUsers": []
+  },
+  "userStories": []
+}
