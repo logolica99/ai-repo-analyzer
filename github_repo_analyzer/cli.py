@@ -17,6 +17,11 @@ from rich.table import Table
 from .analyzer import GitHubRepoAnalyzer, AnalyzerFactory
 from .enhanced_analyzer import EnhancedClaudeAnalyzer
 from .test_generator import TestGenerator
+from .health_analyzer import HealthAnalyzer
+from .ai_health_analyzer import AIHealthAnalyzer
+from .hybrid_health_analyzer import HybridHealthAnalyzer
+from .file_based_health_analyzer import FileBasedHealthAnalyzer
+from .health_formatter import HealthFormatter
 from .types import OutputFormat, AnalyzerConfig, TestGenerationConfig
 from .exceptions import (
     GitHubRepoAnalyzerError, RepositoryNotFoundError, ClaudeAnalysisError,
@@ -272,6 +277,37 @@ def tests(ctx, repo, token, focus, max_tests, include_unit, include_integration,
         
         # Run test generation
         asyncio.run(_run_test_generation(owner, repo_name, config, max_tests, include_unit, include_integration, include_e2e, include_api))
+        
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        if ctx.obj.get('verbose'):
+            console.print_exception()
+        sys.exit(1)
+
+
+@cli.command()
+@click.argument('repo', callback=validate_repo_format, required=True)
+@click.option('--token', '-t', help='GitHub personal access token')
+@click.option('--format', 'output_format', callback=validate_output_format, default='text', help='Output format (text, json, markdown)')
+@click.option('--output-file', '-o', type=click.Path(path_type=Path), help='Save health report to file')
+@click.option('--focus', '-f', help='Focus area for health analysis (e.g., "security", "performance", "maintainability")')
+@click.pass_context
+def health(ctx, repo, token, output_format, output_file, focus):
+    """Analyze repository health across multiple dimensions using AI-powered analysis."""
+    
+    try:
+        owner, repo_name = repo.split('/', 1)
+        
+        config = AnalyzerFactory.create_default()
+        if token:
+            config.github.token = token
+        config.output_format = output_format
+        
+        if output_file:
+            config.output_file = output_file
+        
+        # Run health analysis
+        asyncio.run(_run_health_analysis(owner, repo_name, config, focus))
         
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -961,6 +997,46 @@ def _display_test_generation_results(test_documentation, config: AnalyzerConfig)
     
     console.print(f"\n[bold green]✅ Test Generation Complete![/bold green]")
     console.print("[dim]Tip: Review the generated tests and customize them for your specific testing needs[/dim]")
+
+
+async def _run_health_analysis(owner: str, repo_name: str, config: AnalyzerConfig, focus: Optional[str]):
+    """Run health analysis for a repository."""
+    
+    console.print(Panel(f"🏥 Health Analysis: [bold blue]{owner}/{repo_name}[/bold blue]", style="blue"))
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console
+    ) as progress:
+        
+        task1 = progress.add_task("Cloning repository and analyzing files...", total=None)
+        
+        try:
+            # Create file-based health analyzer (clones repo and analyzes actual files)
+            health_analyzer = FileBasedHealthAnalyzer(config.github, config.claude)
+            
+            # Run file-based health analysis
+            health_report = await health_analyzer.analyze_repository_health(owner, repo_name)
+            
+            progress.update(task1, description="Formatting health report...")
+            
+            # Create formatter and display results
+            formatter = HealthFormatter(config.output_format)
+            
+            if config.output_file:
+                # Save to file
+                formatter.save_to_file(health_report, str(config.output_file))
+                console.print(f"\n[green]Health report saved to: {config.output_file}[/green]")
+            else:
+                # Display in console
+                formatter.display_health_report(health_report)
+            
+            progress.update(task1, description="Health analysis complete!")
+            
+        except Exception as e:
+            console.print(f"[red]Health analysis failed: {e}[/red]")
+            raise
 
 
 def _display_analysis_results(analysis_result, config: AnalyzerConfig):

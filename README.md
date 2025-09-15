@@ -10,6 +10,7 @@ A powerful CLI tool that analyzes GitHub repositories and generates comprehensiv
 - 🌐 **API Endpoint Mapping**: Automatically identify and document API endpoints, external integrations, and service communications
 - 🔧 **Technical Deep Dive**: Analyze technology stack, build systems, testing frameworks, and deployment strategies
 - 🧪 **Test Generation**: Generate comprehensive test cases and documentation based on user stories
+- 🏥 **Repository Health Analysis**: Comprehensive health assessment across code quality, documentation, architecture, dependencies, security, testing, and performance
 - 🌐 **Internet Access**: Can research and gather additional context from the web
 - 🎯 **Smart Context**: Understands project purpose, tech stack, and user needs
 - 📊 **Rich Output**: Beautiful terminal output with formatted user stories and interactive architecture diagrams
@@ -107,6 +108,9 @@ github-repo-analyzer architecture "owner/repo-name"
 # Generate comprehensive test cases and documentation from user stories
 github-repo-analyzer tests "owner/repo-name"
 
+# Analyze repository health across multiple dimensions
+github-repo-analyzer health "owner/repo-name"
+
 # Analyze with custom output format
 github-repo-analyzer analyze "owner/repo-name" --format json
 
@@ -184,6 +188,13 @@ github-repo-analyzer tests \
 - `--include-api`: Include API tests (default: true)
 - `--format`: Output format: text, json, markdown (default: markdown)
 - `--output-file`: Save test documentation to file (default: auto-generated)
+
+#### `health` Command
+- `repo`: GitHub repository in format "owner/repo-name" (required)
+- `--token`: GitHub personal access token for private repositories
+- `--format`: Output format: text, json, markdown (default: text)
+- `--output-file`: Save health report to file
+- `--focus`: Focus area for health analysis (e.g., "security", "performance", "maintainability")
 
 #### General Options
 - `--verbose`: Enable verbose logging
@@ -273,6 +284,36 @@ This will generate comprehensive test documentation including:
 - **▶️ Execution Instructions**: Step-by-step test execution guidance
 - **🔧 Maintenance Notes**: Test maintenance and update guidelines
 
+### Example 7: Repository Health Analysis
+
+Analyze repository health across multiple dimensions:
+
+```bash
+# Basic health analysis
+github-repo-analyzer health "facebook/react"
+
+# Focused health analysis with markdown output
+github-repo-analyzer health \
+  "microsoft/vscode" \
+  --focus "security" \
+  --format markdown \
+  --output-file "vscode-health-report.md"
+
+# JSON health report for integration
+github-repo-analyzer health \
+  "django/django" \
+  --format json \
+  --output-file "django-health.json"
+```
+
+This will generate comprehensive health reports including:
+- **🏥 Overall Health Score**: Weighted score across all health dimensions
+- **📊 Health Categories**: Detailed analysis of code quality, documentation, architecture, dependencies, security, testing, and performance
+- **🔍 Health Metrics**: Individual metrics with scores, status, and detailed analysis
+- **🚨 Critical Issues**: Identification of critical problems requiring immediate attention
+- **💡 Recommendations**: Prioritized recommendations for improving repository health
+- **📈 Progress Tracking**: Ability to track health improvements over time
+
 ## Output Formats
 
 ### Text Format (Default)
@@ -329,6 +370,41 @@ Effort: Medium
 
 **Priority:** High  
 **Effort:** Medium
+```
+
+### Health Report Format
+```markdown
+# 🏥 Repository Health Report
+
+**Repository:** facebook/react
+**Analysis Date:** 2024-01-15T10:30:00Z
+**Overall Score:** 73.8%
+**Overall Status:** GOOD
+
+## 📋 Summary
+
+Repository is in good health with minor areas for improvement.
+
+**Overall Health:** 🟡 `[██████████████░░░░░░] 73.8%`
+
+## 📊 Health Categories
+
+### 🟡 Code Quality
+
+**Score:** 71.2% (good)
+**Description:** Analysis of code structure, complexity, and maintainability
+
+| Metric | Score | Status | Details |
+|--------|-------|--------|---------|
+| 🟡 Code Complexity | 70.0% | good | Cyclomatic complexity is within acceptable limits |
+| 🟡 Code Style | 80.0% | good | Code follows consistent style guidelines |
+| 🟠 Code Duplication | 60.0% | fair | Some code duplication detected |
+| 🟡 Code Size | 75.0% | good | Most functions and classes are appropriately sized |
+
+**Recommendations:**
+- Consider refactoring complex functions
+- Break down large functions
+- Use automated formatting tools
 ```
 
 ### Test Documentation Format
