@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`Running command: ${command} ${args.join(' ')}`)
 
-    return new Promise((resolve) => {
+    return new Promise<Response>((resolve) => {
       const child = spawn(command, args, {
         cwd: process.cwd(),
         env: { ...process.env }

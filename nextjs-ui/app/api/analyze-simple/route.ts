@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 import path from 'path'
+
+const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
