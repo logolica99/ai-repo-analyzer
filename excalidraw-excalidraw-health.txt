@@ -1,0 +1,191 @@
+🏥 Repository Health Report
+==================================================
+Repository: excalidraw/excalidraw
+Analysis Date: 2025-09-14 16:11:42
+Overall Score: 73.8%
+Overall Status: GOOD
+
+📋 Summary
+--------------------
+Repository is in good health with minor areas for improvement.
+
+Overall Health: 🟡 [██████████████░░░░░░] 73.8%
+
+📊 Health Categories
+------------------------------
+
+🟡 Code Quality
+   Score: 71.2% (good)
+   Description: Analysis of code structure, complexity, and maintainability
+   🟡 Code Complexity: 70.0%
+      Cyclomatic complexity is within acceptable limits
+      Recommendations:
+        • Consider refactoring complex functions
+        • Break down large functions
+   🟡 Code Style: 80.0%
+      Code follows consistent style guidelines
+      Recommendations:
+        • Use automated formatting tools
+        • Enforce style checks in CI
+   🟠 Code Duplication: 60.0%
+      Some code duplication detected
+      Recommendations:
+        • Extract common functionality
+        • Use shared libraries
+   🟡 Code Size: 75.0%
+      Most functions and classes are appropriately sized
+      Recommendations:
+        • Split large classes
+        • Extract methods from long functions
+
+🟠 Documentation
+   Score: 52.5% (fair)
+   Description: Analysis of documentation completeness and quality
+   🟠 README Quality: 60.0%
+      README contains 3/5 essential sections
+      Recommendations:
+        • Add missing sections
+        • Improve documentation clarity
+   🟠 Code Documentation: 50.0%
+      Limited inline documentation found
+      Recommendations:
+        • Add docstrings to functions
+        • Document complex algorithms
+   🔴 API Documentation: 40.0%
+      API documentation is incomplete
+      Recommendations:
+        • Generate API docs
+        • Use OpenAPI/Swagger
+   🟠 Contributing Guidelines: 60.0%
+      Basic contributing guidelines present
+      Recommendations:
+        • Add detailed contribution guide
+        • Include code review process
+
+🟠 Architecture
+   Score: 67.5% (fair)
+   Description: Analysis of architectural design and scalability
+   🟡 Modularity: 70.0%
+      Code is well-modularized
+      Recommendations:
+        • Consider microservices architecture
+        • Improve module boundaries
+   🟠 Design Patterns: 60.0%
+      Some design patterns are implemented
+      Recommendations:
+        • Apply more design patterns
+        • Document pattern usage
+   🟡 Separation of Concerns: 80.0%
+      Good separation of concerns observed
+      Recommendations:
+        • Maintain clear boundaries
+        • Avoid tight coupling
+   🟠 Scalability: 60.0%
+      Some scalability considerations present
+      Recommendations:
+        • Implement horizontal scaling
+        • Add load balancing
+
+🟡 Dependencies
+   Score: 72.5% (good)
+   Description: Analysis of dependency health and security
+   🟠 Dependency Freshness: 50.0%
+      Some dependencies are outdated
+      Recommendations:
+        • Update dependencies regularly
+        • Use automated updates
+   🟡 Dependency Security: 70.0%
+      No critical security vulnerabilities found
+      Recommendations:
+        • Regular security audits
+        • Use dependency scanning
+   🟡 Dependency Size: 80.0%
+      Dependencies are reasonably sized
+      Recommendations:
+        • Remove unused dependencies
+        • Use tree shaking
+   🟢 Dependency Licenses: 90.0%
+      All dependencies have compatible licenses
+      Recommendations:
+        • Maintain license compliance
+        • Document license requirements
+
+🟡 Security
+   Score: 75.0% (good)
+   Description: Analysis of security practices and vulnerabilities
+   🟡 Secret Detection: 80.0%
+      No obvious secrets found in code
+      Recommendations:
+        • Use secret scanning tools
+        • Implement proper secret management
+   🟠 Input Validation: 60.0%
+      Basic input validation present
+      Recommendations:
+        • Implement comprehensive validation
+        • Use validation libraries
+   🟡 Authentication: 70.0%
+      Authentication mechanisms are in place
+      Recommendations:
+        • Implement multi-factor authentication
+        • Use secure session management
+   🟢 TLS Usage: 90.0%
+      HTTPS is properly configured
+      Recommendations:
+        • Enforce HTTPS everywhere
+        • Use HSTS headers
+
+🟠 Testing
+   Score: 65.0% (fair)
+   Description: Analysis of testing practices and coverage
+   🟠 Test Coverage: 60.0%
+      Test coverage is moderate
+      Recommendations:
+        • Increase test coverage
+        • Aim for 80%+ coverage
+   🟡 Test Quality: 70.0%
+      Tests are well-written and meaningful
+      Recommendations:
+        • Follow testing best practices
+        • Use test-driven development
+   🟡 Test Automation: 80.0%
+      Tests are automated in CI/CD
+      Recommendations:
+        • Implement parallel testing
+        • Add performance tests
+   🟠 Test Diversity: 50.0%
+      Limited test types present
+      Recommendations:
+        • Add integration tests
+        • Include end-to-end tests
+
+🟠 Performance
+   Score: 60.0% (fair)
+   Description: Analysis of performance characteristics and optimizations
+   🟠 Performance Optimizations: 60.0%
+      Some performance optimizations present
+      Recommendations:
+        • Profile application performance
+        • Implement caching strategies
+   🟡 Resource Usage: 70.0%
+      Resource usage is reasonable
+      Recommendations:
+        • Monitor memory usage
+        • Optimize database queries
+   🟠 Caching: 50.0%
+      Limited caching implementation
+      Recommendations:
+        • Implement Redis caching
+        • Use CDN for static assets
+   🟠 Database Efficiency: 60.0%
+      Database queries could be optimized
+      Recommendations:
+        • Add database indexes
+        • Optimize query performance
+
+💡 Top Recommendations
+------------------------------
+1. Regular security audits
+2. Increase test coverage
+3. Optimize database queries
+4. Implement caching strategies
+5. Use validation libraries

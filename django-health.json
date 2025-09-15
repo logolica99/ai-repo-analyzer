@@ -1,0 +1,41 @@
+{
+  "repository": {
+    "full_name": "django/django",
+    "owner": "django",
+    "name": "django",
+    "description": "The Web framework for perfectionists with deadlines.",
+    "language": "Python",
+    "stars": 84986,
+    "forks": 32956
+  },
+  "analysis_date": "2025-09-14T16:11:57.953145",
+  "overall_score": 0.723125,
+  "overall_status": "good",
+  "summary": "Repository is in good health with minor areas for improvement.",
+  "categories": [
+    "HealthCategory(name='Code Quality', metrics=[HealthMetric(name='Code Complexity', score=0.7, status='good', details='Cyclomatic complexity is within acceptable limits', recommendations=['Consider refactoring complex functions', 'Break down large functions'], weight=1.0), HealthMetric(name='Code Style', score=0.8, status='good', details='Code follows consistent style guidelines', recommendations=['Use automated formatting tools', 'Enforce style checks in CI'], weight=1.0), HealthMetric(name='Code Duplication', score=0.6, status='fair', details='Some code duplication detected', recommendations=['Extract common functionality', 'Use shared libraries'], weight=1.0), HealthMetric(name='Code Size', score=0.75, status='good', details='Most functions and classes are appropriately sized', recommendations=['Split large classes', 'Extract methods from long functions'], weight=1.0)], overall_score=0.7125, status='good', description='Analysis of code structure, complexity, and maintainability')",
+    "HealthCategory(name='Documentation', metrics=[HealthMetric(name='README Quality', score=0.2, status='critical', details='README contains 1/5 essential sections', recommendations=['Add missing sections', 'Improve documentation clarity'], weight=1.0), HealthMetric(name='Code Documentation', score=0.5, status='fair', details='Limited inline documentation found', recommendations=['Add docstrings to functions', 'Document complex algorithms'], weight=1.0), HealthMetric(name='API Documentation', score=0.4, status='poor', details='API documentation is incomplete', recommendations=['Generate API docs', 'Use OpenAPI/Swagger'], weight=1.0), HealthMetric(name='Contributing Guidelines', score=0.6, status='fair', details='Basic contributing guidelines present', recommendations=['Add detailed contribution guide', 'Include code review process'], weight=1.0)], overall_score=0.425, status='poor', description='Analysis of documentation completeness and quality')",
+    "HealthCategory(name='Architecture', metrics=[HealthMetric(name='Modularity', score=0.7, status='good', details='Code is well-modularized', recommendations=['Consider microservices architecture', 'Improve module boundaries'], weight=1.0), HealthMetric(name='Design Patterns', score=0.6, status='fair', details='Some design patterns are implemented', recommendations=['Apply more design patterns', 'Document pattern usage'], weight=1.0), HealthMetric(name='Separation of Concerns', score=0.8, status='good', details='Good separation of concerns observed', recommendations=['Maintain clear boundaries', 'Avoid tight coupling'], weight=1.0), HealthMetric(name='Scalability', score=0.6, status='fair', details='Some scalability considerations present', recommendations=['Implement horizontal scaling', 'Add load balancing'], weight=1.0)], overall_score=0.675, status='fair', description='Analysis of architectural design and scalability')",
+    "HealthCategory(name='Dependencies', metrics=[HealthMetric(name='Dependency Freshness', score=0.5, status='fair', details='Some dependencies are outdated', recommendations=['Update dependencies regularly', 'Use automated updates'], weight=1.0), HealthMetric(name='Dependency Security', score=0.7, status='good', details='No critical security vulnerabilities found', recommendations=['Regular security audits', 'Use dependency scanning'], weight=1.0), HealthMetric(name='Dependency Size', score=0.8, status='good', details='Dependencies are reasonably sized', recommendations=['Remove unused dependencies', 'Use tree shaking'], weight=1.0), HealthMetric(name='Dependency Licenses', score=0.9, status='excellent', details='All dependencies have compatible licenses', recommendations=['Maintain license compliance', 'Document license requirements'], weight=1.0)], overall_score=0.725, status='good', description='Analysis of dependency health and security')",
+    "HealthCategory(name='Security', metrics=[HealthMetric(name='Secret Detection', score=0.8, status='good', details='No obvious secrets found in code', recommendations=['Use secret scanning tools', 'Implement proper secret management'], weight=1.0), HealthMetric(name='Input Validation', score=0.6, status='fair', details='Basic input validation present', recommendations=['Implement comprehensive validation', 'Use validation libraries'], weight=1.0), HealthMetric(name='Authentication', score=0.7, status='good', details='Authentication mechanisms are in place', recommendations=['Implement multi-factor authentication', 'Use secure session management'], weight=1.0), HealthMetric(name='TLS Usage', score=0.9, status='excellent', details='HTTPS is properly configured', recommendations=['Enforce HTTPS everywhere', 'Use HSTS headers'], weight=1.0)], overall_score=0.75, status='good', description='Analysis of security practices and vulnerabilities')",
+    "HealthCategory(name='Testing', metrics=[HealthMetric(name='Test Coverage', score=0.6, status='fair', details='Test coverage is moderate', recommendations=['Increase test coverage', 'Aim for 80%+ coverage'], weight=1.0), HealthMetric(name='Test Quality', score=0.7, status='good', details='Tests are well-written and meaningful', recommendations=['Follow testing best practices', 'Use test-driven development'], weight=1.0), HealthMetric(name='Test Automation', score=0.8, status='good', details='Tests are automated in CI/CD', recommendations=['Implement parallel testing', 'Add performance tests'], weight=1.0), HealthMetric(name='Test Diversity', score=0.5, status='fair', details='Limited test types present', recommendations=['Add integration tests', 'Include end-to-end tests'], weight=1.0)], overall_score=0.65, status='fair', description='Analysis of testing practices and coverage')",
+    "HealthCategory(name='Performance', metrics=[HealthMetric(name='Performance Optimizations', score=0.6, status='fair', details='Some performance optimizations present', recommendations=['Profile application performance', 'Implement caching strategies'], weight=1.0), HealthMetric(name='Resource Usage', score=0.7, status='good', details='Resource usage is reasonable', recommendations=['Monitor memory usage', 'Optimize database queries'], weight=1.0), HealthMetric(name='Caching', score=0.5, status='fair', details='Limited caching implementation', recommendations=['Implement Redis caching', 'Use CDN for static assets'], weight=1.0), HealthMetric(name='Database Efficiency', score=0.6, status='fair', details='Database queries could be optimized', recommendations=['Add database indexes', 'Optimize query performance'], weight=1.0)], overall_score=0.6, status='fair', description='Analysis of performance characteristics and optimizations')"
+  ],
+  "critical_issues": [
+    "Documentation: Analysis of documentation completeness and quality",
+    "  - README Quality: README contains 1/5 essential sections",
+    "  - API Documentation: API documentation is incomplete"
+  ],
+  "recommendations": [
+    "Regular security audits",
+    "Break down large functions",
+    "Update dependencies regularly",
+    "Document complex algorithms",
+    "Split large classes",
+    "Remove unused dependencies",
+    "Use tree shaking",
+    "Implement multi-factor authentication",
+    "Follow testing best practices",
+    "Add performance tests"
+  ]
+}

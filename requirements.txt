@@ -5,6 +5,7 @@ charset-normalizer==3.4.3
 claude-code-sdk==0.0.20
 click==8.2.1
 -e git+ssh://git@github.com/logolica99/ai-repo-analyzer.git@210fdb710489c7eecb8e58ec2ef00a45fa6c5c46#egg=github_repo_analyzer
+
 idna==3.10
 iniconfig==2.1.0
 markdown-it-py==4.0.0
