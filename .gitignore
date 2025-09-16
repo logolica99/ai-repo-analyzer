@@ -133,3 +133,6 @@ dmypy.json
 !/README.md
 user-stories.*
 .github-analyzer-config.yaml
+
+nextjs-ui/node_modules
+nextjs-ui/run.sh
