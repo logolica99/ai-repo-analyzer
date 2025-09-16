@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execAsync = promisify(exec)
+import { executeCommand } from '../../../lib/system-utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,15 +79,13 @@ ${testsContent.split('## 📊 Test Summary')[1]?.split('## 📈 Test Coverage')[
     const projectName = repo.replace('/', '_')
     const outputFile = `${projectName}_minimal.json`
     
-    // Use a very simple command that should complete quickly
-    const wslCommand = `wsl -e bash -c "cd /mnt/c/Users/juuba/claude-sdk-project-summarizer && source venv/bin/activate && timeout 300 python -m github_repo_analyzer.cli info '${repo}' --output-file ${outputFile} || echo 'TIMEOUT'"`
-    
-    console.log(`Running minimal analysis: ${wslCommand}`)
-
     try {
-      const { stdout, stderr } = await execAsync(wslCommand, {
-        timeout: 360000, // 6 minutes
-        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+      const { stdout, stderr } = await executeCommand({
+        command: 'python',
+        args: ['-m', 'github_repo_analyzer.cli', 'info', repo],
+        cwd: process.cwd(),
+        timeout: 300,
+        outputFile
       })
 
       if (stdout.includes('TIMEOUT')) {
@@ -120,7 +115,7 @@ ${testsContent.split('## 📊 Test Summary')[1]?.split('## 📈 Test Coverage')[
           userStories: [],
           comprehensiveReport: stdout
         },
-        command: wslCommand,
+        command: `python -m github_repo_analyzer.cli info ${repo}`,
         outputFile: outputFile
       })
 
@@ -132,7 +127,7 @@ ${testsContent.split('## 📊 Test Summary')[1]?.split('## 📈 Test Coverage')[
         error: execError.message,
         stderr: execError.stderr,
         stdout: execError.stdout,
-        command: wslCommand
+        command: `python -m github_repo_analyzer.cli info ${repo}`
       }, { status: 500 })
     }
 

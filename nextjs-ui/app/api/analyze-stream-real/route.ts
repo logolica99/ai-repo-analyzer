@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { spawn } from 'child_process'
+import { spawnCommand } from '../../../lib/system-utils'
 
 export async function POST(request: NextRequest) {
   const { repo, analysisType, focus } = await request.json()
@@ -47,10 +47,7 @@ export async function POST(request: NextRequest) {
   const outputFile = `${projectName}_${analysisType}.json`
   args.push('--output-file', outputFile)
 
-  // Use WSL to run the command in the virtual environment
-  const wslCommand = `wsl -e bash -c "cd /mnt/c/Users/juuba/claude-sdk-project-summarizer && source venv/bin/activate && timeout 2700 ${command} ${args.join(' ')} || echo 'TIMEOUT_OR_ERROR'"`
-  
-  console.log(`Running WSL command: ${wslCommand}`)
+  console.log(`Running command: ${command} ${args.join(' ')}`)
 
   // Create a readable stream that captures the spawn output
   const stream = new ReadableStream({
@@ -66,20 +63,24 @@ export async function POST(request: NextRequest) {
       
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
         type: 'output', 
-        content: `📋 Command: ${wslCommand}`,
+        content: `📋 Command: ${command} ${args.join(' ')}`,
         timestamp: new Date().toISOString()
       })}\n\n`))
       
-      // Spawn the WSL process
-      const wslProcess = spawn('wsl', ['-e', 'bash', '-c', `cd /mnt/c/Users/juuba/claude-sdk-project-summarizer && source venv/bin/activate && timeout 2700 ${command} ${args.join(' ')} || echo 'TIMEOUT_OR_ERROR'`], {
-        stdio: ['pipe', 'pipe', 'pipe']
+      // Spawn the process using system detection
+      const wslProcess = spawnCommand({
+        command,
+        args,
+        cwd: process.cwd(),
+        timeout: 2700,
+        outputFile
       })
       
       let stdout = ''
       let stderr = ''
       
       // Handle stdout
-      wslProcess.stdout.on('data', (data) => {
+      wslProcess.stdout.on('data', (data: any) => {
         const output = data.toString()
         stdout += output
         
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       })
       
       // Handle stderr
-      wslProcess.stderr.on('data', (data) => {
+      wslProcess.stderr.on('data', (data: any) => {
         const output = data.toString()
         stderr += output
         
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
       })
       
       // Handle process completion
-      wslProcess.on('close', (code) => {
+      wslProcess.on('close', (code: any) => {
         console.log(`Process exited with code ${code}`)
 
        
@@ -225,7 +226,7 @@ export async function POST(request: NextRequest) {
       })
       
       // Handle process errors
-      wslProcess.on('error', (error) => {
+      wslProcess.on('error', (error: any) => {
         console.error('Process error:', error)
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
           type: 'error', 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { spawn } from 'child_process'
+import { spawnCommand } from '../../../lib/system-utils'
 import path from 'path'
 
 export async function POST(request: NextRequest) {
@@ -44,9 +44,10 @@ export async function POST(request: NextRequest) {
     console.log(`Running command: ${command} ${args.join(' ')}`)
 
     return new Promise<Response>((resolve) => {
-      const child = spawn(command, args, {
-        cwd: process.cwd(),
-        env: { ...process.env }
+      const child = spawnCommand({
+        command,
+        args,
+        cwd: process.cwd()
       })
 
       let output = ''
@@ -56,25 +57,25 @@ export async function POST(request: NextRequest) {
       // Stream output in real-time
       const stream = new ReadableStream({
         start(controller) {
-          child.stdout.on('data', (data) => {
+          child.stdout.on('data', (data: any) => {
             const chunk = data.toString()
             output += chunk
             controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'output', data: chunk })}\n\n`))
           })
 
-          child.stderr.on('data', (data) => {
+          child.stderr.on('data', (data: any) => {
             const chunk = data.toString()
             errorOutput += chunk
             controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'error', data: chunk })}\n\n`))
           })
 
-          child.on('close', (code) => {
+          child.on('close', (code: any) => {
             isComplete = true
             controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'complete', code, output, errorOutput })}\n\n`))
             controller.close()
           })
 
-          child.on('error', (error) => {
+          child.on('error', (error: any) => {
             isComplete = true
             controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`))
             controller.close()

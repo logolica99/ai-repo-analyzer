@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-
-const execAsync = promisify(exec)
+import { executeCommand } from '../../../lib/system-utils'
 
 export async function GET() {
   try {
     // Test if the analyzer is working with a simple command
-    const testCommand = `wsl -e bash -c "cd /mnt/c/Users/juuba/claude-sdk-project-summarizer && source venv/bin/activate && python -m github_repo_analyzer.cli --help"`
-    
-    console.log(`Testing analyzer with: ${testCommand}`)
+    console.log(`Testing analyzer...`)
 
-    const { stdout, stderr } = await execAsync(testCommand, {
-      timeout: 30000, // 30 seconds
+    const { stdout, stderr } = await executeCommand({
+      command: 'python',
+      args: ['-m', 'github_repo_analyzer.cli', '--help'],
+      cwd: process.cwd(),
+      timeout: 30
     })
 
     return NextResponse.json({

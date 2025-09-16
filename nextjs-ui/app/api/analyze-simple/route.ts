@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { spawn } from 'child_process'
-import { exec } from 'child_process'
-import { promisify } from 'util'
+import { executeCommand } from '../../../lib/system-utils'
 import path from 'path'
-
-const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
@@ -218,15 +214,13 @@ This comprehensive analysis combines:
     const projectName = repo.replace('/', '_')
     const outputFile = `${projectName}_${analysisType}.json`
     
-    // Use WSL to run the command in the virtual environment with better error handling
-    const wslCommand = `wsl -e bash -c "cd /mnt/c/Users/juuba/claude-sdk-project-summarizer && source venv/bin/activate && timeout 1200 ${command} ${args.join(' ')} --output-file ${outputFile} || echo 'TIMEOUT_OR_ERROR'"`
-    console.log(`Running WSL command: ${wslCommand}`)
-
     try {
-      const { stdout, stderr } = await execAsync(wslCommand, {
-        timeout: 1260000, // 21 minutes timeout (slightly more than the internal timeout)
-        maxBuffer: 1024 * 1024 * 50, // 50MB buffer for large outputs
-        killSignal: 'SIGKILL' // Use SIGKILL instead of SIGTERM
+      const { stdout, stderr } = await executeCommand({
+        command,
+        args,
+        cwd: process.cwd(),
+        timeout: 1200,
+        outputFile
       })
 
       // Check if we got a timeout or error signal
@@ -236,7 +230,7 @@ This comprehensive analysis combines:
           error: 'Analysis timed out after 20 minutes',
           stdout: stdout.replace('TIMEOUT_OR_ERROR', '').trim(),
           stderr: stderr,
-          command: wslCommand,
+          command: `${command} ${args.join(' ')}`,
           timeout: true,
           outputFile: outputFile
         }, { status: 408 }) // Request Timeout status
@@ -255,12 +249,12 @@ This comprehensive analysis combines:
         }
       }
 
-      return NextResponse.json({
-        success: true,
-        result,
-        command: wslCommand,
-        outputFile: outputFile
-      })
+        return NextResponse.json({
+          success: true,
+          result,
+          command: `${command} ${args.join(' ')}`,
+          outputFile: outputFile
+        })
 
     } catch (execError: any) {
       console.error('Command execution error:', execError)
@@ -273,7 +267,7 @@ This comprehensive analysis combines:
         error: execError.message,
         stderr: execError.stderr,
         stdout: execError.stdout,
-        command: wslCommand,
+        command: `${command} ${args.join(' ')}`,
         partial: hasPartialOutput,
         timeout: execError.signal === 'SIGTERM',
         outputFile: outputFile

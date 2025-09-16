@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { spawn } from 'child_process'
+import { spawnCommand } from '../../../lib/system-utils'
 
 export async function POST(request: NextRequest) {
   const { repo, analysisType, focus } = await request.json()
